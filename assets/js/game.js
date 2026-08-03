@@ -211,7 +211,10 @@
         return x && !x.revealed;
       });
     },
-    applyRevealSideEffects(state, kind, info, result) {
+    applyRevealSideEffects(state, kind, info, result, options) {
+      options = options || {};
+      if (options.deceit) return; // 거짓 해금은 이름/사건 연쇄 없음
+
       if (kind === "EMOTION" && info.unlocksEventId && sys("eventLinkFromEmotion")) {
         const linked = this.find(state, info.unlocksEventId);
         if (linked && !linked.unlocked) {
@@ -232,7 +235,9 @@
         Log.push("name_revealed", { name: state.trueName, fromFactId: info.id });
       }
     },
-    revealById(state, kind, infoId) {
+    revealById(state, kind, infoId, options) {
+      options = options || {};
+      const deceit = !!options.deceit;
       const ev = this.selected(state);
       if (!ev) return { ok: false, reason: "no_event" };
       const list = this.listOf(state, kind);
@@ -242,6 +247,18 @@
       if (!info) return { ok: false, reason: "no_info" };
       if (info.revealed) return { ok: false, reason: "already", info: info, event: ev };
 
+      if (deceit && kind === "FACT") {
+        // 비가역: 진짜 내용은 봉인하고 공용 거짓 풀에서 덮어씀
+        info.trueKeyword = info.keyword;
+        info.trueText = info.text;
+        const lie = drawFalseFact(state);
+        info.keyword = (lie && lie.keyword) || info.keyword;
+        info.text =
+          (lie && lie.text) ||
+          "그 기억은 법정에 맞춰 다시 쓰인 것이다. 그는 그렇게 말하기로 했다.";
+        info.isFalse = true;
+      }
+
       info.revealed = true;
       Log.push("info_revealed", {
         eventId: ev.id,
@@ -249,6 +266,8 @@
         infoId: info.id,
         text: info.text,
         chosen: true,
+        deceit: deceit,
+        isFalse: !!info.isFalse,
       });
 
       const result = {
@@ -258,9 +277,44 @@
         kind: kind,
         unlockedEventId: null,
         nameRevealed: false,
+        deceit: deceit,
+        isFalse: !!info.isFalse,
       };
-      this.applyRevealSideEffects(state, kind, info, result);
+      this.applyRevealSideEffects(state, kind, info, result, { deceit: deceit });
       return result;
+    },
+    // 선택 사건의 해당 속성 미해금 키워드를 전부 공개 (실패 붕괴용)
+    // 신뢰 MAX 거짓 모드는 일괄 해금에 쓰지 않음(진짜 붕괴만)
+    revealAllHidden(state, kind) {
+      const hidden = this.hiddenChoices(state, kind);
+      if (!hidden.length) return { ok: false, reason: "none", kind: kind, reveals: [], count: 0 };
+
+      const reveals = [];
+      const unlockedEventIds = [];
+      let nameRevealed = false;
+      for (let i = 0; i < hidden.length; i++) {
+        const r = this.revealById(state, kind, hidden[i].id);
+        if (!r.ok) continue;
+        reveals.push(r);
+        if (r.unlockedEventId) unlockedEventIds.push(r.unlockedEventId);
+        if (r.nameRevealed) nameRevealed = true;
+      }
+      Log.push("fail_collapse_reveal", {
+        kind: kind,
+        eventId: state.selectedEventId,
+        count: reveals.length,
+        unlockedEventIds: unlockedEventIds,
+        nameRevealed: nameRevealed,
+      });
+      return {
+        ok: reveals.length > 0,
+        kind: kind,
+        reveals: reveals,
+        count: reveals.length,
+        unlockedEventIds: unlockedEventIds,
+        nameRevealed: nameRevealed,
+        event: this.selected(state),
+      };
     },
     revealNext(state, kind) {
       const next = this.nextHidden(this.listOf(state, kind));
@@ -457,6 +511,37 @@
     return !!(state && (state.soulBroken || state.timeExpired));
   }
 
+  function trustMax() {
+    const t = bal().trust || {};
+    return t.max != null ? t.max : 10;
+  }
+
+  function isTrustDeceitActive(state) {
+    if (!state || !sys("trustDeceit")) return false;
+    return state.trust >= trustMax();
+  }
+
+  function drawFalseFact(state) {
+    if (!state) return null;
+    if (!state.falseFactDeck) state.falseFactDeck = [];
+    if (!state.falseFactDiscard) state.falseFactDiscard = [];
+    if (!state.falseFactDeck.length) {
+      if (!state.falseFactDiscard.length) {
+        const pool = (Content().falseFactPool || []).map(function (f) {
+          return { keyword: f.keyword, text: f.text };
+        });
+        state.falseFactDeck = shuffle(pool, state.rng || Math.random);
+      } else {
+        state.falseFactDeck = shuffle(state.falseFactDiscard.slice(), state.rng || Math.random);
+        state.falseFactDiscard = [];
+      }
+    }
+    if (!state.falseFactDeck.length) return null;
+    const lie = state.falseFactDeck.shift();
+    state.falseFactDiscard.push(lie);
+    return lie;
+  }
+
   function caseCount() {
     const c = Content();
     if (c.cases && c.cases.length) return c.cases.length;
@@ -500,6 +585,7 @@
             keyword: f.keyword || null,
             text: f.text,
             revealed: false,
+            isFalse: false,
           };
         }),
         emotions: (ev.emotions || []).map(function (em) {
@@ -528,6 +614,9 @@
     })();
 
     const baseCourt = deceased.courtName || "ㅁㅁ법정";
+    const falsePool = ((Content().falseFactPool || []).slice() || []).map(function (f) {
+      return { keyword: f.keyword, text: f.text };
+    });
 
     return {
       phase: "interrogation", // interrogation | verdict | ended
@@ -550,6 +639,8 @@
       selectedEventId: startEvent ? startEvent.id : null,
       identityFactId: pack.identityFactId || null,
       achievements: (pack.achievements || []).slice(),
+      falseFactDeck: shuffle(falsePool, rng || Math.random),
+      falseFactDiscard: [],
       hand: [],
       deck: [],
       discard: [],
@@ -599,6 +690,7 @@
         courtName: this.state.courtName,
         caseId: this.state.caseId,
         caseIndex: this.state.caseIndex,
+        identityFactId: this.state.identityFactId,
       });
       return this.state;
     },
@@ -679,10 +771,21 @@
       s.guidePhase = "pick_card";
       s.pendingReveal = null;
 
-      const roll = Unlock.roll(s, kind, s.rng);
+      const deceit = kind === "FACT" && isTrustDeceitActive(s);
+      let roll;
+      if (deceit) {
+        // 신뢰 MAX: 사실 질문은 무조건 해금하되 내용은 거짓
+        s.failStreakFact = 0;
+        roll = { success: true, p: 1, roll: 0, deceit: true };
+        Log.push("unlock_roll", { type: kind, p: 1, roll: 0, success: true, deceit: true });
+      } else {
+        roll = Unlock.roll(s, kind, s.rng);
+      }
+
       let reveal = null;
       let needChoose = false;
       let choices = [];
+      let failBurst = null;
 
       if (roll.success) {
         choices = Events.hiddenChoices(s, kind).map(function (info) {
@@ -693,7 +796,7 @@
           };
         });
         if (choices.length === 1) {
-          reveal = Events.revealById(s, kind, choices[0].id);
+          reveal = Events.revealById(s, kind, choices[0].id, { deceit: deceit });
         } else if (choices.length > 1) {
           needChoose = true;
           s.pendingReveal = {
@@ -702,10 +805,25 @@
             choiceIds: choices.map(function (c) {
               return c.id;
             }),
+            deceit: deceit,
           };
-          Log.push("reveal_choice_open", { kind: kind, choices: choices.map(function (c) {
-            return c.id;
-          }) });
+          Log.push("reveal_choice_open", {
+            kind: kind,
+            deceit: deceit,
+            choices: choices.map(function (c) {
+              return c.id;
+            }),
+          });
+        }
+      } else if (sys("failCollapse")) {
+        const fc = bal().failCollapse || {};
+        const threshold = fc.threshold != null ? fc.threshold : 2;
+        const streak = kind === "FACT" ? s.failStreakFact : s.failStreakEmotion;
+        if (streak >= threshold) {
+          failBurst = Events.revealAllHidden(s, kind);
+          if (kind === "FACT") s.failStreakFact = 0;
+          else s.failStreakEmotion = 0;
+          if (!failBurst.ok) failBurst = null;
         }
       }
 
@@ -725,6 +843,10 @@
         reveal: reveal,
         needChoose: needChoose,
         choices: choices,
+        failBurst: failBurst,
+        deceit: deceit,
+        failStreakFact: s.failStreakFact,
+        failStreakEmotion: s.failStreakEmotion,
         soulBroken: broken,
         timeExpired: timeOut || s.timeExpired,
         trust: s.trust,
@@ -739,15 +861,38 @@
       return result;
     },
 
+    failCollapseThreshold() {
+      const fc = bal().failCollapse || {};
+      return fc.threshold != null ? fc.threshold : 2;
+    },
+
+    getFailStreaks() {
+      const s = this.state;
+      if (!s) return { fact: 0, emotion: 0, threshold: this.failCollapseThreshold() };
+      return {
+        fact: s.failStreakFact || 0,
+        emotion: s.failStreakEmotion || 0,
+        threshold: this.failCollapseThreshold(),
+      };
+    },
+
+    isTrustDeceitActive() {
+      return isTrustDeceitActive(this.state);
+    },
+
     confirmReveal(infoId) {
       const s = this.state;
       if (!s || !s.pendingReveal) return { ok: false, reason: "no_pending" };
       const pending = s.pendingReveal;
       if (pending.choiceIds.indexOf(infoId) < 0) return { ok: false, reason: "bad_choice" };
 
-      const reveal = Events.revealById(s, pending.kind, infoId);
+      const reveal = Events.revealById(s, pending.kind, infoId, { deceit: !!pending.deceit });
       s.pendingReveal = null;
-      Log.push("reveal_choice_confirm", { infoId: infoId, kind: pending.kind });
+      Log.push("reveal_choice_confirm", {
+        infoId: infoId,
+        kind: pending.kind,
+        deceit: !!pending.deceit,
+      });
 
       const broken = Soul.check(s);
       const timeOut = !broken && CourtTime.check(s);
@@ -756,6 +901,7 @@
       const result = {
         ok: !!reveal.ok,
         reveal: reveal,
+        deceit: !!pending.deceit,
         soulBroken: broken,
         timeExpired: timeOut || s.timeExpired,
         trust: s.trust,
@@ -853,13 +999,15 @@
         failStreakFact: this.state.failStreakFact,
         failStreakEmotion: this.state.failStreakEmotion,
       };
-      const p = Unlock.chance(fake, card.type);
+      const deceit = card.type === "FACT" && sys("trustDeceit") && nextTrust >= tMax;
+      const p = deceit ? 1 : Unlock.chance(fake, card.type);
       const soulRisk = sys("soulBreak") && nextStress >= sMax;
       return {
         nextTrust: nextTrust,
         nextStress: nextStress,
         unlockP: p,
         soulRisk: soulRisk,
+        deceit: deceit,
         valueMatch: deltas.matched,
         value: deltas.value,
         trustDelta: deltas.trustDelta,

@@ -19,6 +19,8 @@
       playtestLog: { enabled: true }, // 세션 로그 / JSON 다운로드
       courtTimeGauge: { enabled: true }, // 법정시간 표시·소모·0시 강제 판결
       karmaUi: { enabled: true }, // 조기 판결 업보 UI (채점/엔딩 분기 없음)
+      failCollapse: { enabled: true }, // 속성별 연속 실패 시 해당 키워드 일괄 해금
+      trustDeceit: { enabled: true }, // 신뢰 MAX 시 사실 해금 = 거짓 정보(비가역)
       bgm: { enabled: true },
       uiSelectSfx: { enabled: true },
       uiConfirmSfx: { enabled: true },
@@ -39,7 +41,11 @@
       // TODO(스펙§13): 공식 확정 전 테스트용 테이블
       factUnlockChanceByTrust: [0.15, 0.2, 0.25, 0.32, 0.4, 0.5, 0.6, 0.7, 0.8, 0.88, 0.95],
       emotionUnlockChanceByStress: [0.15, 0.2, 0.25, 0.32, 0.4, 0.5, 0.6, 0.7, 0.8, 0.88, 0.95],
-      // TODO(스펙§13): 연속 실패 보정 — 시스템 자리만 확보, 기본 무보정
+      // 같은 속성 연속 실패 시 선택 사건의 해당 키워드 전부 해금
+      failCollapse: { threshold: 2 },
+      // 신뢰가 max일 때 사실 질문은 판정 없이 거짓 해금
+      trustDeceit: { atMax: true },
+      // TODO(스펙§13): 연속 실패 확률 보정 — 시스템 자리만 확보, 기본 무보정
       failStreakBonus: { enabled: false, perFail: 0.05, maxBonus: 0.25 },
     },
 
@@ -53,6 +59,8 @@
       timeExpired: "법정 시간이 끝났습니다. 판결하십시오.",
       karmaWarn: "아직 알아본 것이 적습니다. 성급한 판결은 업보가 됩니다.",
       karmaEnd: "업보 — 알아보지도 않고 판결하였다.",
+      failCollapseFact: "같은 추궁이 두 번 막히자, 망자의 사실이 통째로 무너졌다.",
+      failCollapseEmotion: "같은 추궁이 두 번 막히자, 망자의 감정이 통째로 무너졌다.",
     },
   };
 })();

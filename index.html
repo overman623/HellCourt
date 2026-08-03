@@ -472,6 +472,12 @@
 
       .case-item.locked {
         color: rgba(242, 242, 242, 0.35);
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .case-item:not(.locked) {
+        cursor: pointer;
       }
 
       .case-item .note {
@@ -905,12 +911,71 @@
       }
 
       .cards-foot {
-        flex: 0 0 48%;
-        min-height: 42%;
+        flex: 0 0 42%;
+        min-height: 36%;
         display: flex;
         flex-direction: column;
         border: 2px solid var(--line);
         padding: 0.85rem;
+      }
+
+      .cards-fail {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin: 0.45rem 0;
+        padding: 0.45rem 0.55rem;
+        border: 1px solid rgba(232, 232, 232, 0.28);
+        letter-spacing: 0.06em;
+      }
+
+      .fail-meter {
+        display: grid;
+        grid-template-columns: 4.5rem 1fr auto;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.72rem;
+        color: rgba(242, 242, 242, 0.7);
+      }
+
+      .fail-meter.fact .fail-meter-label {
+        color: var(--fact);
+      }
+
+      .fail-meter.emotion .fail-meter-label {
+        color: var(--emotion);
+      }
+
+      .fail-meter-pips {
+        display: flex;
+        gap: 0.3rem;
+      }
+
+      .fail-pip {
+        width: 0.7rem;
+        height: 0.7rem;
+        border: 1px solid rgba(242, 242, 242, 0.35);
+        background: transparent;
+      }
+
+      .fail-pip.filled.fact {
+        background: var(--fact);
+        border-color: var(--fact);
+      }
+
+      .fail-pip.filled.emotion {
+        background: var(--emotion);
+        border-color: var(--emotion);
+      }
+
+      .fail-meter.warn {
+        color: #f0d78c;
+      }
+
+      .fail-meter-count {
+        font-variant-numeric: tabular-nums;
+        opacity: 0.85;
       }
 
       .cards-foot p {
@@ -1414,6 +1479,18 @@
               <span class="cards-remain" id="cardsRemain">손패 0 / 전체 0</span>
             </div>
             <div class="cards-body" id="cardsBody"></div>
+            <div class="cards-fail" id="cardsFail" aria-label="해금 실패 누적">
+              <div class="fail-meter fact" id="failMeterFact">
+                <span class="fail-meter-label">사실 실패</span>
+                <span class="fail-meter-pips" id="failPipsFact"></span>
+                <span class="fail-meter-count" id="failCountFact">0/2</span>
+              </div>
+              <div class="fail-meter emotion" id="failMeterEmotion">
+                <span class="fail-meter-label">감정 실패</span>
+                <span class="fail-meter-pips" id="failPipsEmotion"></span>
+                <span class="fail-meter-count" id="failCountEmotion">0/2</span>
+              </div>
+            </div>
             <div class="cards-foot">
               <p id="cardsHint">인생사건을 선택한 뒤 질문 카드를 사용하십시오.</p>
               <div class="select-hint">
@@ -1652,10 +1729,11 @@
             li.innerHTML =
               '<span class="cursor">▶</span><span>[' +
               kindLabel +
-              "] " +
-              c.keyword +
-              (c.unlocksEventId ? ' <span class="note">· 다음 사건</span>' : "") +
-              "</span>";
+              "] ??? <span class=\"note\">(" +
+              (i + 1) +
+              "/" +
+              pick.choices.length +
+              ")</span></span>";
             li.addEventListener("click", function () {
               pick.index = i;
               playUiSelect();
@@ -1679,6 +1757,53 @@
           ui.tabIndex = 0;
           refreshIngame({ animateCards: true });
           renderRevealPick();
+        }
+
+        function applyFailBurst(burst, options) {
+          options = options || {};
+          if (!burst || !burst.ok) return;
+          const labels = Game.labels() || {};
+          const kindLabel = burst.kind === "FACT" ? "사실" : "감정";
+          const main =
+            burst.kind === "FACT"
+              ? labels.failCollapseFact || "같은 추궁이 두 번 막히자, 망자의 사실이 통째로 무너졌다."
+              : labels.failCollapseEmotion || "같은 추궁이 두 번 막히자, 망자의 감정이 통째로 무너졌다.";
+
+          let sub = kindLabel + " 키워드 " + burst.count + "개 일괄 공개";
+          if (!ui.freshKeywords) ui.freshKeywords = {};
+          (burst.reveals || []).forEach(function (r) {
+            if (r.info && r.info.id) ui.freshKeywords[r.info.id] = true;
+          });
+
+          const unlockedIds = burst.unlockedEventIds || [];
+          ui.fx = {
+            keywordId: burst.reveals && burst.reveals[0] && burst.reveals[0].info
+              ? burst.reveals[0].info.id
+              : null,
+            eventId: unlockedIds[0] || null,
+          };
+
+          if (burst.nameRevealed) {
+            sub += "\n정체가 드러났다: " + Game.state.displayName;
+          }
+          if (unlockedIds.length) {
+            const titles = unlockedIds
+              .map(function (id) {
+                const nev = Game.state.events.find(function (e) {
+                  return e.id === id;
+                });
+                return nev ? nev.title : id;
+              })
+              .join(", ");
+            sub += "\n새로운 인생사건이 열렸다: " + titles;
+            sub += "\n사건 정보에서 선택해 조사하십시오.";
+          }
+
+          ui.stageBackup = null;
+          setStage(main, sub);
+          pulseStage("unlock");
+          ui.tabIndex = 0;
+          refreshIngame(options.refresh || {});
         }
 
         function applyRevealResult(reveal, options) {
@@ -1909,7 +2034,39 @@
           const cardTotal = s.hand.length + s.deck.length + s.discard.length;
           document.getElementById("cardsRemain").textContent =
             "손패 " + s.hand.length + " / 전체 " + cardTotal;
+          renderFailMeters();
           updateStatusGuide();
+        }
+
+        function renderFailMeters() {
+          const box = document.getElementById("cardsFail");
+          if (!box) return;
+          const on = Game.systemEnabled("failCollapse");
+          box.hidden = !on;
+          if (!on) return;
+
+          const streaks = Game.getFailStreaks();
+          const th = streaks.threshold || 2;
+
+          function fill(kind, count) {
+            const pips = document.getElementById(kind === "FACT" ? "failPipsFact" : "failPipsEmotion");
+            const countEl = document.getElementById(kind === "FACT" ? "failCountFact" : "failCountEmotion");
+            const meter = document.getElementById(kind === "FACT" ? "failMeterFact" : "failMeterEmotion");
+            if (!pips || !countEl || !meter) return;
+            pips.innerHTML = "";
+            for (let i = 0; i < th; i++) {
+              const pip = document.createElement("span");
+              pip.className =
+                "fail-pip" +
+                (i < count ? " filled " + (kind === "FACT" ? "fact" : "emotion") : "");
+              pips.appendChild(pip);
+            }
+            countEl.textContent = count + "/" + th;
+            meter.classList.toggle("warn", count >= th - 1 && th > 1);
+          }
+
+          fill("FACT", streaks.fact || 0);
+          fill("EMOTION", streaks.emotion || 0);
         }
 
         function updateStatusGuide() {
@@ -2122,22 +2279,23 @@
               (ev.id === Game.state.selectedEventId
                 ? '<span class="note">(조사 중)</span>'
                 : ev.unlocked
-                  ? ""
+                  ? '<span class="note">(선택 가능)</span>'
                   : '<span class="note">(잠김)</span>');
 
             li.appendChild(cursor);
             li.appendChild(body);
-            li.addEventListener("click", function () {
-              if (!ev.unlocked) return;
-              ui.tabIndex = 0;
-              ui.focusZone = "panel";
-              ui.eventIndex = i;
-              playUiSelect();
-              playUiConfirm();
-              Game.selectEvent(ev.id);
-              refreshIngame();
-              setStage(ev.title, ev.summary || "이 인생사건을 조사합니다.");
-            });
+            if (ev.unlocked) {
+              li.addEventListener("click", function () {
+                ui.tabIndex = 0;
+                ui.focusZone = "panel";
+                ui.eventIndex = i;
+                playUiSelect();
+                playUiConfirm();
+                Game.selectEvent(ev.id);
+                refreshIngame();
+                setStage(ev.title, ev.summary || "이 인생사건을 조사합니다.");
+              });
+            }
             list.appendChild(li);
           });
 
@@ -2606,6 +2764,12 @@
             return;
           }
 
+          if (result.failBurst && result.failBurst.ok) {
+            applyFailBurst(result.failBurst, { refresh: { animateCards: true } });
+            finishCardRound(!!(result.soulBroken || result.timeExpired));
+            return;
+          }
+
           if (result.reveal && result.reveal.ok) {
             applyRevealResult(result.reveal, { refresh: { animateCards: true } });
             finishCardRound(!!(result.soulBroken || result.timeExpired));
@@ -2615,6 +2779,19 @@
           if (result.roll && !result.roll.success) {
             main = "망자는 입을 다물었다.";
             stageKind = "fail";
+            const th = Game.failCollapseThreshold();
+            const streak =
+              card.type === "FACT" ? result.failStreakFact : result.failStreakEmotion;
+            if (Game.systemEnabled("failCollapse") && streak > 0) {
+              sub +=
+                "\n" +
+                (card.type === "FACT" ? "사실" : "감정") +
+                " 실패 " +
+                streak +
+                "/" +
+                th +
+                (streak >= th - 1 ? " · 다음 실패 시 일괄 공개" : "");
+            }
           }
 
           setStage(main, sub);
@@ -2979,15 +3156,9 @@
               return;
             }
             if (TABS[ui.tabIndex] === "cases") {
-              // 이미 선택 이벤트면 키워드로, 아니면 이벤트 이동
-              const ev = unlockedEvents()[ui.eventIndex];
-              if (ev && ev.unlocked && Game.state && Game.state.selectedEventId === ev.id) {
-                playUiSelect();
-                enterKeywords();
-              } else {
-                playUiSelect();
-                moveEvent(1);
-              }
+              // 해금된 인생사건끼리 이동 (선택도 함께). 키워드는 Enter
+              playUiSelect();
+              moveEvent(1);
             } else if (TABS[ui.tabIndex] === "menu") {
               ui.menuIndex = (ui.menuIndex + 1) % ingameMenuDefs.length;
               playUiSelect();

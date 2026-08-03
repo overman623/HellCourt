@@ -20,7 +20,7 @@
           // 임시: 가치관 사실 키워드 2개 (질서/도전/관계/경쟁/정의/쾌락)
           values: ["관계", "정의"],
         },
-        identityFactId: "ev1_fact_3",
+        identityFactId: "ev1_fact_1",
         achievements: [
           {
             id: "ach_identity",
@@ -74,8 +74,8 @@
             facts: [
               {
                 id: "ev1_fact_1",
-                keyword: "기다림",
-                text: "어릴 적, 엄마는 ‘조금만 기다려. 꼭 데리러 올게’ 하고는 낡은 다리 위에 그를 남겨 두었다.",
+                keyword: "이름표",
+                text: "엄마는 오지 않았지만, 옷깃에 달아 둔 이름표만은 남았다. 거기에는 ‘한소라’라고 적혀 있었다.",
               },
               {
                 id: "ev1_fact_2",
@@ -84,8 +84,8 @@
               },
               {
                 id: "ev1_fact_3",
-                keyword: "이름표",
-                text: "엄마는 오지 않았지만, 옷깃에 달아 둔 이름표만은 남았다. 거기에는 ‘한소라’라고 적혀 있었다.",
+                keyword: "기다림",
+                text: "어릴 적, 엄마는 ‘조금만 기다려. 꼭 데리러 올게’ 하고는 낡은 다리 위에 그를 남겨 두었다.",
               },
             ],
             emotions: [
@@ -99,13 +99,13 @@
                 id: "ev1_emo_2",
                 keyword: "자기혐오",
                 text: "이름표를 만질 때마다 그날이 되살아났다. 그는 그 빈자리를 미워하며, ‘다시는 누군가를 혼자 남겨 두지 않겠다’고 다짐했다.",
-                unlocksEventId: "ev_station",
+                unlocksEventId: null,
               },
               {
                 id: "ev1_emo_3",
                 keyword: "미련",
                 text: "그래도 일요일이면 발끝이 다리 쪽으로 기울었다. 버려진 쪽의 기분은 지워지지 않았다.",
-                unlocksEventId: null,
+                unlocksEventId: "ev_station",
               },
             ],
           },
@@ -136,13 +136,13 @@
                 id: "ev_st_emo_1",
                 keyword: "투영",
                 text: "아이의 뒷모습에서, 다리 위에 서 있던 자신이 겹쳐 보였다.",
-                unlocksEventId: null,
+                unlocksEventId: "ev_fire",
               },
               {
                 id: "ev_st_emo_2",
                 keyword: "안도",
                 text: "다짐을 한 번은 지켰다는 안도가 생겼다. 동시에, 지키지 못할 순간이 올지도 모른다는 예감도 생겼다.",
-                unlocksEventId: "ev_fire",
+                unlocksEventId: null,
               },
               {
                 id: "ev_st_emo_3",
@@ -209,7 +209,7 @@
           profileNote: "판결 전까지는 신원이 가려진 망자. 타인의 대가를 밟고 올라선 흔적이 짙다.",
           values: ["경쟁", "쾌락"],
         },
-        identityFactId: "ks_ev1_fact_3",
+        identityFactId: "ks_ev1_fact_2",
         achievements: [
           {
             id: "ks_ach_identity",
@@ -268,13 +268,13 @@
               },
               {
                 id: "ks_ev1_fact_2",
-                keyword: "떠넘김",
-                text: "감사가 시작되자, 그는 후배의 접속 기록로 이체 기록을 다시 심어 넣었다.",
+                keyword: "장부",
+                text: "빼돌린 돈을 적은 비장부 맨 위에는 ‘강세훈’이라는 이름이 그대로 적혀 있었다.",
               },
               {
                 id: "ks_ev1_fact_3",
-                keyword: "장부",
-                text: "빼돌린 돈을 적은 비장부 맨 위에는 ‘강세훈’이라는 이름이 그대로 적혀 있었다.",
+                keyword: "떠넘김",
+                text: "감사가 시작되자, 그는 후배의 접속 기록로 이체 기록을 다시 심어 넣었다.",
               },
             ],
             emotions: [
@@ -282,13 +282,13 @@
                 id: "ks_ev1_emo_1",
                 keyword: "쾌감",
                 text: "구멍이 메워지는 소리를 들으며, 그는 안도가 아니라 이겼다는 쾌감을 느꼈다.",
-                unlocksEventId: null,
+                unlocksEventId: "ks_silence",
               },
               {
                 id: "ks_ev1_emo_2",
                 keyword: "경멸",
                 text: "울면서 변명하는 후배가 한심해 보였다. ‘원래 그렇게 쉽게 밟히는 자리’라고 속으로 말했다.",
-                unlocksEventId: "ks_silence",
+                unlocksEventId: null,
               },
               {
                 id: "ks_ev1_emo_3",
@@ -331,13 +331,13 @@
                 id: "ks_ev2_emo_2",
                 keyword: "합리화",
                 text: "‘내가 안 밟으면 다른 사람이 밟았을 것’이라고 되뇌었다. 그 말이 곧 면죄부가 되었다.",
-                unlocksEventId: "ks_door",
+                unlocksEventId: null,
               },
               {
                 id: "ks_ev2_emo_3",
                 keyword: "공허",
                 text: "승진 축하 자리에서 웃으면서도, 축하받는 이유가 가짜라는 감각만은 남았다. 그래도 멈추지 않았다.",
-                unlocksEventId: null,
+                unlocksEventId: "ks_door",
               },
             ],
           },
@@ -398,7 +398,7 @@
           profileNote: "판결 전까지는 신원이 가려진 망자. 사랑으로 감싼 선택이, 다른 목숨을 스치게 했다.",
           values: ["관계", "질서"],
         },
-        identityFactId: "hy_ev1_fact_3",
+        identityFactId: "hy_ev1_fact_1",
         achievements: [
           {
             id: "hy_ach_identity",
@@ -452,8 +452,8 @@
             facts: [
               {
                 id: "hy_ev1_fact_1",
-                keyword: "충돌",
-                text: "동생이 취한 채 사람을 치고 도망쳤다. 그는 현장에 가장 먼저 도착했다.",
+                keyword: "메모",
+                text: "그날 남긴 메모에는 ‘하윤아, 나만 믿어’라고 적혀 있었고, 서명란에 ‘정하윤’이 남아 있었다.",
               },
               {
                 id: "hy_ev1_fact_2",
@@ -462,8 +462,8 @@
               },
               {
                 id: "hy_ev1_fact_3",
-                keyword: "메모",
-                text: "그날 남긴 메모에는 ‘하윤아, 나만 믿어’라고 적혀 있었고, 서명란에 ‘정하윤’이 남아 있었다.",
+                keyword: "충돌",
+                text: "동생이 취한 채 사람을 치고 도망쳤다. 그는 현장에 가장 먼저 도착했다.",
               },
             ],
             emotions: [
@@ -477,13 +477,13 @@
                 id: "hy_ev1_emo_2",
                 keyword: "보호",
                 text: "옳은지보다 ‘내가 막아야 한다’는 생각만 남았다. 그 밤의 침묵이 곧 보호라고 믿었다.",
-                unlocksEventId: "hy_second",
+                unlocksEventId: null,
               },
               {
                 id: "hy_ev1_emo_3",
                 keyword: "금기",
                 text: "피해자 이야기를 들을 때마다 입을 다물었다. 말하기 시작하는 순간, 동생이 끝장날 것 같았다.",
-                unlocksEventId: null,
+                unlocksEventId: "hy_second",
               },
             ],
           },
@@ -514,13 +514,13 @@
                 id: "hy_ev2_emo_1",
                 keyword: "후회",
                 text: "첫 밤을 숨기지 않았다면 두 번째는 없었을지 모른다는 생각이, 뒤늦게 뼈를 파고들었다.",
-                unlocksEventId: null,
+                unlocksEventId: "hy_last",
               },
               {
                 id: "hy_ev2_emo_2",
                 keyword: "분열",
                 text: "동생을 미워하면서도 버릴 수 없었다. 신고해야 한다는 목소리와, 지켜줘야 한다는 목소리가 동시에 울렸다.",
-                unlocksEventId: "hy_last",
+                unlocksEventId: null,
               },
               {
                 id: "hy_ev2_emo_3",
@@ -579,6 +579,59 @@
 
     // 임시: 덱 30장 (사실 15 / 감정 15)
     // value: 질서|도전|관계|경쟁|정의|쾌락 — 망자 values와 일치 시 스탯 효과 +1(동일 방향)
+
+    // 신뢰 MAX 거짓 해금용 공용 풀 (망자·사건 공통)
+    falseFactPool: [
+      {
+        keyword: "목격",
+        text: "그날 자신은 멀리서만 바라봤다고 했다. 손댄 것은 없다고 말했다.",
+      },
+      {
+        keyword: "우연",
+        text: "모든 것이 우연의 겹침이었다고 했다. 의도한 선택은 없었다고 주장했다.",
+      },
+      {
+        keyword: "오해",
+        text: "사람들이 잘못 본 것이라고 했다. 자신은 그 자리에 없었다고 말했다.",
+      },
+      {
+        keyword: "침묵",
+        text: "말할 수 없는 사정이 있었다고만 했다. 자세한 사실은 끝내 내놓지 않았다.",
+      },
+      {
+        keyword: "대리",
+        text: "누군가 다른 이가 했을 일이라고 했다. 자신은 그 뒤를 수습했을 뿐이라 했다.",
+      },
+      {
+        keyword: "기억왜곡",
+        text: "기억이 흐릿하다고 했다. 들은 이야기와 제 기억이 섞였을 수 있다고 말했다.",
+      },
+      {
+        keyword: "방어",
+        text: "스스로를 지키려다 보니 그렇게 보일 뿐이라고 했다. 해친 적은 없다고 했다.",
+      },
+      {
+        keyword: "약속",
+        text: "누군가와의 약속을 지키기 위한 행동이었다고만 했다. 내용은 밝히지 않았다.",
+      },
+      {
+        keyword: "사고",
+        text: "계획된 일이 아니라 사고였다고 했다. 막을 수 없었다고 반복했다.",
+      },
+      {
+        keyword: "부재",
+        text: "결정적인 순간에는 그 자리에 없었다고 했다. 나중에야 결과를 알았다고 말했다.",
+      },
+      {
+        keyword: "선의",
+        text: "나쁜 뜻이 아니었다고 했다. 결과가 엇나갔을 뿐이라고 주장했다.",
+      },
+      {
+        keyword: "조작",
+        text: "기록이 조작되었을 가능성이 있다고 했다. 자신은 원본을 본 적이 없다고 했다.",
+      },
+    ],
+
     questionCards: [
       {
         id: "qc_f01",
