@@ -514,6 +514,11 @@
         color: rgba(242, 242, 242, 0.35);
       }
 
+      .value-kw {
+        color: var(--fact);
+        letter-spacing: 0.04em;
+      }
+
       .badge {
         display: inline-block;
         margin-left: 0.35rem;
@@ -1923,6 +1928,16 @@
           }
           if (s.profileNote) {
             html += "<p>" + s.profileNote + "</p>";
+          }
+          if (s.values && s.values.length) {
+            html +=
+              "<p><strong>가치관</strong> · " +
+              s.values
+                .map(function (v) {
+                  return "<span class=\"value-kw\">" + v + "</span>";
+                })
+                .join(" · ") +
+              "</p>";
           }
 
           html +=

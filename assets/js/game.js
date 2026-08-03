@@ -421,6 +421,7 @@
       nameRevealed: false,
       intro: deceased.intro || "",
       profileNote: deceased.profileNote || "",
+      values: (deceased.values || []).slice(),
       trust: (b.trust && b.trust.start) || 5,
       stress: (b.stress && b.stress.start) || 5,
       courtTime: (b.courtTime && b.courtTime.start) || 10,
