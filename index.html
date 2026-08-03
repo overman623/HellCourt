@@ -519,6 +519,16 @@
         letter-spacing: 0.04em;
       }
 
+      .value-kw.matched {
+        color: #f0d78c;
+      }
+
+      .value-boost {
+        color: #f0d78c;
+        font-size: 0.85em;
+        letter-spacing: 0.04em;
+      }
+
       .badge {
         display: inline-block;
         margin-left: 0.35rem;
@@ -1215,8 +1225,86 @@
         color: rgba(242, 242, 242, 0.6);
       }
 
+      .reveal-pick {
+        position: fixed;
+        left: 50%;
+        top: 42%;
+        transform: translate(-50%, -50%);
+        z-index: 45;
+        min-width: min(22rem, 86vw);
+        max-width: 92vw;
+        padding: 1.15rem 1.35rem 1rem;
+        border: 2px solid rgba(232, 232, 232, 0.55);
+        background: rgba(8, 8, 8, 0.94);
+        letter-spacing: 0.08em;
+        pointer-events: auto;
+      }
+
+      .reveal-pick[hidden] {
+        display: none;
+      }
+
+      .reveal-pick-title {
+        margin: 0 0 0.35rem;
+        text-align: center;
+        font-size: clamp(1rem, 2.2vw, 1.2rem);
+        color: #f2f2f2;
+      }
+
+      .reveal-pick-sub {
+        margin: 0 0 0.75rem;
+        text-align: center;
+        font-size: 0.82rem;
+        color: rgba(242, 242, 242, 0.55);
+      }
+
+      .reveal-pick-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .reveal-pick-item {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid rgba(232, 232, 232, 0.25);
+        color: rgba(242, 242, 242, 0.88);
+        cursor: pointer;
+        background: transparent;
+      }
+
+      .reveal-pick-item .cursor {
+        opacity: 0;
+        color: var(--accent);
+      }
+
+      .reveal-pick-item.selected {
+        border-color: rgba(242, 242, 242, 0.75);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .reveal-pick-item.selected .cursor {
+        opacity: 1;
+      }
+
+      .reveal-pick-hint {
+        margin: 0.75rem 0 0;
+        text-align: center;
+        font-size: 0.8rem;
+        color: rgba(242, 242, 242, 0.45);
+      }
+
       #screen-ingame.input-locked {
         pointer-events: none;
+      }
+
+      #screen-ingame.input-locked .reveal-pick {
+        pointer-events: auto;
       }
 
       .back-hint {
@@ -1381,6 +1469,13 @@
         <p class="game-toast-title" id="gameToastTitle"></p>
         <p class="game-toast-sub" id="gameToastSub"></p>
       </div>
+
+      <div id="revealPick" class="reveal-pick" hidden role="dialog" aria-labelledby="revealPickTitle">
+        <p class="reveal-pick-title" id="revealPickTitle">공개할 키워드</p>
+        <p class="reveal-pick-sub" id="revealPickSub">해금에 성공했습니다. 공개할 단서를 고르십시오.</p>
+        <ul id="revealPickList" class="reveal-pick-list" role="listbox"></ul>
+        <p class="reveal-pick-hint">↑↓ 이동 · Enter 확정</p>
+      </div>
     </main>
 
     <script src="assets/data/game-config.js"></script>
@@ -1425,6 +1520,7 @@
           busy: false,
           prevCourtTime: null,
           animateCardsOnce: false,
+          revealPick: null, // { choices, index, kind }
         };
 
         const endMenuItems = Array.from(document.querySelectorAll("#endMenu .end-menu-item"));
@@ -1531,6 +1627,143 @@
           ui.busy = !!on;
           const ingame = document.getElementById("screen-ingame");
           if (ingame) ingame.classList.toggle("input-locked", !!on);
+        }
+
+        function hideRevealPick() {
+          ui.revealPick = null;
+          const el = document.getElementById("revealPick");
+          if (el) el.hidden = true;
+        }
+
+        function renderRevealPick() {
+          const pick = ui.revealPick;
+          const list = document.getElementById("revealPickList");
+          const el = document.getElementById("revealPick");
+          if (!pick || !list || !el) return;
+          const kindLabel = pick.kind === "FACT" ? "사실" : "감정";
+          document.getElementById("revealPickSub").textContent =
+            "해금 성공 · " + kindLabel + " 키워드 중 공개할 단서를 고르십시오.";
+          list.innerHTML = "";
+          pick.choices.forEach(function (c, i) {
+            const li = document.createElement("li");
+            li.className = "reveal-pick-item" + (i === pick.index ? " selected" : "");
+            li.setAttribute("role", "option");
+            li.setAttribute("aria-selected", i === pick.index ? "true" : "false");
+            li.innerHTML =
+              '<span class="cursor">▶</span><span>[' +
+              kindLabel +
+              "] " +
+              c.keyword +
+              (c.unlocksEventId ? ' <span class="note">· 다음 사건</span>' : "") +
+              "</span>";
+            li.addEventListener("click", function () {
+              pick.index = i;
+              playUiSelect();
+              renderRevealPick();
+              confirmRevealPick();
+            });
+            list.appendChild(li);
+          });
+          el.hidden = false;
+        }
+
+        function openRevealPick(choices, kind) {
+          ui.revealPick = {
+            choices: choices.slice(),
+            index: 0,
+            kind: kind,
+          };
+          setInputLocked(true);
+          setStage("해금 성공", "공개할 키워드를 선택하십시오.");
+          pulseStage("unlock");
+          ui.tabIndex = 0;
+          refreshIngame({ animateCards: true });
+          renderRevealPick();
+        }
+
+        function applyRevealResult(reveal, options) {
+          options = options || {};
+          if (!reveal || !reveal.ok) return;
+          const info = reveal.info;
+          const kw = info.keyword || (reveal.kind === "FACT" ? "사실" : "감정");
+          let main = "키워드 해금 · " + kw;
+          let sub = info.text || "";
+          ui.fx = {
+            keywordId: info.id || null,
+            eventId: reveal.unlockedEventId || null,
+          };
+          if (info.id) {
+            if (!ui.freshKeywords) ui.freshKeywords = {};
+            ui.freshKeywords[info.id] = true;
+          }
+          if (reveal.nameRevealed) {
+            sub = info.text + "\n정체가 드러났다: " + Game.state.displayName;
+          } else if (reveal.unlockedEventId) {
+            const unlockedId = reveal.unlockedEventId;
+            const nev = Game.state.events.find(function (e) {
+              return e.id === unlockedId;
+            });
+            sub =
+              info.text +
+              "\n새로운 인생사건이 열렸다: " +
+              (nev ? nev.title : unlockedId) +
+              "\n사건 정보에서 선택해 조사하십시오.";
+          }
+          ui.stageBackup = null;
+          setStage(main, sub);
+          pulseStage("unlock");
+          ui.tabIndex = 0;
+          refreshIngame(options.refresh || {});
+        }
+
+        function finishCardRound(forceEnd) {
+          const waitMs = 980;
+          setTimeout(function () {
+            const s = Game.state;
+            if (!s) {
+              setInputLocked(false);
+              return;
+            }
+            const max = s.courtTimeMax || 10;
+            const title = forceEnd
+              ? s.soulBroken
+                ? "영혼 파괴"
+                : "법정시간 종료"
+              : "다음 법정시간";
+            const toastSub = forceEnd
+              ? s.soulBroken
+                ? "추가 심문이 불가합니다. 판결하십시오."
+                : "시간이 모두 소모되었습니다. 판결하십시오."
+              : "남은 시간 " + s.courtTime + "/" + max;
+
+            showGameToast(title, toastSub, function () {
+              setInputLocked(false);
+            });
+
+            if (forceEnd) {
+              setTimeout(function () {
+                openVerdict(true);
+              }, 500);
+            }
+          }, waitMs);
+        }
+
+        function confirmRevealPick() {
+          const pick = ui.revealPick;
+          if (!pick || !pick.choices.length) return;
+          const choice = pick.choices[pick.index];
+          if (!choice) return;
+          playUiConfirm();
+          hideRevealPick();
+          setInputLocked(true);
+          const result = Game.confirmReveal(choice.id);
+          if (!result.ok || !result.reveal) {
+            setInputLocked(false);
+            return;
+          }
+          applyRevealResult(result.reveal, { refresh: {} });
+          pulseGauges();
+          finishCardRound(!!(result.soulBroken || result.timeExpired));
         }
 
         function showGameToast(title, sub, onShown) {
@@ -1920,24 +2153,21 @@
           }
 
           let html = "<h3>망자 프로필</h3>";
-          html += "<p><strong>이름</strong> · " + s.displayName + "</p>";
-          if (!s.nameRevealed) {
-            html += "<p class=\"info-line hidden-info\">신원은 아직 밝혀지지 않았습니다.</p>";
-          } else {
-            html += "<p>이름이 복원되었습니다.</p>";
-          }
-          if (s.profileNote) {
-            html += "<p>" + s.profileNote + "</p>";
-          }
+          html += "<p>이름 : " + s.displayName + "</p>";
           if (s.values && s.values.length) {
             html +=
-              "<p><strong>가치관</strong> · " +
+              "<p>가치관 : " +
               s.values
                 .map(function (v) {
                   return "<span class=\"value-kw\">" + v + "</span>";
                 })
                 .join(" · ") +
               "</p>";
+          } else {
+            html += "<p>가치관 : —</p>";
+          }
+          if (s.profileNote) {
+            html += "<p class=\"info-line\">" + s.profileNote + "</p>";
           }
 
           html +=
@@ -2046,11 +2276,25 @@
             title.textContent = card.text;
             const meta = document.createElement("div");
             meta.className = "q-card-meta";
+            const deltas = Game.cardDeltas(card) || {
+              trustDelta: card.trustDelta || 0,
+              stressDelta: card.stressDelta || 0,
+              matched: false,
+              value: card.value || null,
+            };
             meta.innerHTML =
+              (card.value
+                ? '<span class="value-kw' +
+                  (deltas.matched ? " matched" : "") +
+                  '">' +
+                  card.value +
+                  "</span> · "
+                : "") +
               "신뢰 " +
-              deltaHtml(card.trustDelta) +
+              deltaHtml(deltas.trustDelta) +
               " · 스트레스 " +
-              deltaHtml(card.stressDelta);
+              deltaHtml(deltas.stressDelta) +
+              (deltas.matched ? ' <span class="value-boost">공명</span>' : "");
             label.appendChild(title);
             label.appendChild(meta);
 
@@ -2085,7 +2329,17 @@
           const complete = Game.infoComplete(card.type);
           let lines = [];
           lines.push(card.text);
+          if (card.value) {
+            lines.push(
+              "가치관 · " +
+                card.value +
+                (risk && risk.valueMatch ? " (망자와 공명 · 스탯 효과 +1)" : "")
+            );
+          }
           if (card.desc) lines.push(card.desc);
+          if (Game.isHighStress()) {
+            lines.push("고스트레스 — 추가 압박은 +1로 제한");
+          }
           if (risk) {
             lines.push(
               "적용 후 신뢰 " +
@@ -2096,6 +2350,7 @@
                 Math.round(risk.unlockP * 100) +
                 "%"
             );
+            if (risk.stressDampened) lines.push("이 카드의 스트레스 증가가 제한됩니다.");
             if (risk.soulRisk) lines.push("⚠ 사용 시 영혼 파괴 위험이 있습니다.");
           }
           if (complete) lines.push("이 속성의 정보는 모두 공개되었습니다.");
@@ -2142,7 +2397,11 @@
         }
 
         function enterIngame(options) {
-          BGM.playTrack("court");
+          hideRevealPick();
+          // 확정음이 BGM에 묻히지 않도록 짧게 지연
+          setTimeout(function () {
+            BGM.playTrack("court");
+          }, 160);
           Game.start(Math.random, options || { resetCase: true });
           ui.focusZone = "tabs";
           ui.tabIndex = 0;
@@ -2297,7 +2556,7 @@
         }
 
         function useSelectedCard() {
-          if (ui.busy) return;
+          if (ui.busy || ui.revealPick) return;
           if (!Game.state || Game.isInterrogationLocked() || Game.state.phase !== "interrogation") return;
 
           setInputLocked(true);
@@ -2325,6 +2584,12 @@
           let stageKind = "react";
           ui.fx = null;
 
+          if (result.valueMatch && result.value) {
+            sub += " · 가치관 공명(" + result.value + ")";
+          }
+          if (result.stressDampened) {
+            sub += " · 스트레스 상승 제한";
+          }
           if (result.roll) {
             sub +=
               " · 해금 " +
@@ -2333,52 +2598,31 @@
               Math.round(result.roll.p * 100) +
               "%)";
           }
+
+          pulseGauges();
+
+          if (result.needChoose && result.choices && result.choices.length > 1) {
+            openRevealPick(result.choices, card.type);
+            return;
+          }
+
           if (result.reveal && result.reveal.ok) {
-            const info = result.reveal.info;
-            const kw = info.keyword || (result.reveal.kind === "FACT" ? "사실" : "감정");
-            main = "키워드 해금 · " + kw;
-            stageKind = "unlock";
-            ui.fx = {
-              keywordId: info.id || null,
-              eventId: result.reveal.unlockedEventId || null,
-            };
-            if (info.id) {
-              if (!ui.freshKeywords) ui.freshKeywords = {};
-              ui.freshKeywords[info.id] = true;
-            }
-            if (result.reveal.nameRevealed) {
-              sub = info.text + "\n정체가 드러났다: " + Game.state.displayName;
-            } else if (result.reveal.unlockedEventId) {
-              const unlockedId = result.reveal.unlockedEventId;
-              const nev = Game.state.events.find(function (e) {
-                return e.id === unlockedId;
-              });
-              sub =
-                info.text +
-                "\n새로운 인생사건이 열렸다: " +
-                (nev ? nev.title : unlockedId) +
-                "\n사건 정보에서 선택해 조사하십시오.";
-              // 해금만 하고 자동 선택하지 않음 — 현재 선택 사건의 사실/감정만 계속 해금
-            } else {
-              sub = info.text;
-            }
-            ui.stageBackup = null;
-          } else if (result.roll && !result.roll.success) {
+            applyRevealResult(result.reveal, { refresh: { animateCards: true } });
+            finishCardRound(!!(result.soulBroken || result.timeExpired));
+            return;
+          }
+
+          if (result.roll && !result.roll.success) {
             main = "망자는 입을 다물었다.";
             stageKind = "fail";
           }
 
           setStage(main, sub);
           pulseStage(stageKind);
-          pulseGauges();
-          if (stageKind === "unlock") {
-            ui.tabIndex = 0;
-          }
           refreshIngame({ animateCards: true });
 
-          const waitMs = stageKind === "unlock" ? 980 : stageKind === "fail" ? 700 : 720;
+          const waitMs = stageKind === "fail" ? 700 : 720;
           const forceEnd = !!(result.soulBroken || result.timeExpired);
-
           setTimeout(function () {
             const s = Game.state;
             if (!s) {
@@ -2479,6 +2723,24 @@
 
         // input
         document.addEventListener("keydown", function (e) {
+          if (ui.revealPick) {
+            e.preventDefault();
+            const pick = ui.revealPick;
+            const n = pick.choices.length;
+            if (e.key === "ArrowUp") {
+              pick.index = (pick.index + n - 1) % n;
+              playUiSelect();
+              renderRevealPick();
+            } else if (e.key === "ArrowDown") {
+              pick.index = (pick.index + 1) % n;
+              playUiSelect();
+              renderRevealPick();
+            } else if (e.key === "Enter" || e.key === " ") {
+              confirmRevealPick();
+            }
+            return;
+          }
+
           if (ui.busy) {
             e.preventDefault();
             return;
@@ -2788,7 +3050,6 @@
         titleMenuItems.forEach(function (item, i) {
           item.addEventListener("click", function () {
             ui.titleIndex = i;
-            playUiSelect();
             renderTitleMenu();
             playUiConfirm();
             const action = item.dataset.action;
@@ -2841,7 +3102,6 @@
         endMenuItems.forEach(function (item, i) {
           item.addEventListener("click", function () {
             ui.endIndex = i;
-            playUiSelect();
             renderEndMenu();
             playUiConfirm();
             confirmEndMenu();
@@ -2931,10 +3191,13 @@
             if (!systems || !systems[key]) return true;
             return systems[key].enabled !== false;
           },
-          volume() {
-            return (window.GAME_CONFIG && window.GAME_CONFIG.balance && window.GAME_CONFIG.balance.sfxVolume) != null
-              ? window.GAME_CONFIG.balance.sfxVolume
-              : 0.55;
+          volume(kind) {
+            const base =
+              (window.GAME_CONFIG && window.GAME_CONFIG.balance && window.GAME_CONFIG.balance.sfxVolume) != null
+                ? window.GAME_CONFIG.balance.sfxVolume
+                : 0.55;
+            // 확정음은 이동음보다 조금 크게
+            return kind === "confirm" ? Math.min(1, base * 1.15) : base;
           },
           path(kind) {
             const audio = window.GAME_CONTENT && window.GAME_CONTENT.audio;
@@ -2948,7 +3211,7 @@
             if (!this.enabled(sysKey)) return;
             try {
               const a = new Audio(this.path(kind));
-              a.volume = this.volume();
+              a.volume = this.volume(kind);
               a.play().catch(function () {});
             } catch (err) {}
           },
@@ -2960,7 +3223,7 @@
         }
 
         function playUiConfirm() {
-          // Enter / 확정 전용
+          // Enter / 클릭 확정 전용
           UiSfx.play("confirm");
         }
 

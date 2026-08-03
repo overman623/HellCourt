@@ -110,6 +110,40 @@
     },
   };
 
+  // ---------- Stress guard (high-stress dampen + relief draw) ----------
+  const StressGuard = {
+    dampenFrom() {
+      const s = bal().stress || {};
+      return s.dampenFrom != null ? s.dampenFrom : 8;
+    },
+    maxPositiveDelta() {
+      const s = bal().stress || {};
+      return s.maxPositiveDelta != null ? s.maxPositiveDelta : 1;
+    },
+    // 현재 스트레스가 위험 구간이면 양의 증가만 상한
+    dampPositive(state, stressDelta) {
+      const d = stressDelta || 0;
+      if (d <= 0 || !state) return { stressDelta: d, dampened: false };
+      if (state.stress < this.dampenFrom()) return { stressDelta: d, dampened: false };
+      const cap = this.maxPositiveDelta();
+      if (d <= cap) return { stressDelta: d, dampened: false };
+      return { stressDelta: cap, dampened: true, before: d };
+    },
+    isReliefCard(card) {
+      return !!(card && (card.stressDelta || 0) < 0);
+    },
+    handHasRelief(state) {
+      if (!state || !state.hand) return false;
+      for (let i = 0; i < state.hand.length; i++) {
+        if (this.isReliefCard(Hand.cardById(state.hand[i]))) return true;
+      }
+      return false;
+    },
+    needsRelief(state) {
+      return !!(state && state.stress >= this.dampenFrom() && !this.handHasRelief(state));
+    },
+  };
+
   // ---------- Unlock rolls ----------
   const Unlock = {
     chance(state, type) {
@@ -167,27 +201,27 @@
         return x.revealed;
       });
     },
-    revealNext(state, kind) {
+    listOf(state, kind) {
       const ev = this.selected(state);
-      if (!ev) return { ok: false, reason: "no_event" };
-      const list = kind === "FACT" ? ev.facts : ev.emotions;
-      if (this.allRevealed(list)) return { ok: false, reason: "complete", event: ev };
-      const next = this.nextHidden(list);
-      next.revealed = true;
-      Log.push("info_revealed", { eventId: ev.id, kind: kind, infoId: next.id, text: next.text });
-
-      const result = { ok: true, event: ev, info: next, kind: kind, unlockedEventId: null };
-
-      if (kind === "EMOTION" && next.unlocksEventId && sys("eventLinkFromEmotion")) {
-        const linked = this.find(state, next.unlocksEventId);
+      if (!ev) return [];
+      return kind === "FACT" ? ev.facts || [] : ev.emotions || [];
+    },
+    hiddenChoices(state, kind) {
+      return this.listOf(state, kind).filter(function (x) {
+        return x && !x.revealed;
+      });
+    },
+    applyRevealSideEffects(state, kind, info, result) {
+      if (kind === "EMOTION" && info.unlocksEventId && sys("eventLinkFromEmotion")) {
+        const linked = this.find(state, info.unlocksEventId);
         if (linked && !linked.unlocked) {
           linked.unlocked = true;
           result.unlockedEventId = linked.id;
-          Log.push("event_unlocked", { eventId: linked.id, fromEmotionId: next.id });
+          Log.push("event_unlocked", { eventId: linked.id, fromEmotionId: info.id });
         }
       }
 
-      if (kind === "FACT" && sys("identityReveal") && next.id === state.identityFactId) {
+      if (kind === "FACT" && sys("identityReveal") && info.id === state.identityFactId) {
         state.nameRevealed = true;
         state.displayName = state.trueName;
         state.courtName = state.trueName + " 법정";
@@ -195,10 +229,46 @@
           localStorage.setItem("hellcourt.court." + (state.deceasedId || state.caseId), state.courtName);
         } catch (e) {}
         result.nameRevealed = true;
-        Log.push("name_revealed", { name: state.trueName, fromFactId: next.id });
+        Log.push("name_revealed", { name: state.trueName, fromFactId: info.id });
       }
+    },
+    revealById(state, kind, infoId) {
+      const ev = this.selected(state);
+      if (!ev) return { ok: false, reason: "no_event" };
+      const list = this.listOf(state, kind);
+      const info = list.find(function (x) {
+        return x.id === infoId;
+      });
+      if (!info) return { ok: false, reason: "no_info" };
+      if (info.revealed) return { ok: false, reason: "already", info: info, event: ev };
 
+      info.revealed = true;
+      Log.push("info_revealed", {
+        eventId: ev.id,
+        kind: kind,
+        infoId: info.id,
+        text: info.text,
+        chosen: true,
+      });
+
+      const result = {
+        ok: true,
+        event: ev,
+        info: info,
+        kind: kind,
+        unlockedEventId: null,
+        nameRevealed: false,
+      };
+      this.applyRevealSideEffects(state, kind, info, result);
       return result;
+    },
+    revealNext(state, kind) {
+      const next = this.nextHidden(this.listOf(state, kind));
+      if (!next) {
+        const ev = this.selected(state);
+        return { ok: false, reason: "complete", event: ev };
+      }
+      return this.revealById(state, kind, next.id);
     },
   };
 
@@ -225,9 +295,22 @@
         Log.push("deck_reshuffle", { size: state.deck.length });
       }
       if (!state.deck.length) return null;
-      const id = state.deck.shift();
+
+      let id = null;
+      let reliefPriority = false;
+      if (StressGuard.needsRelief(state)) {
+        const idx = state.deck.findIndex(function (cid) {
+          return StressGuard.isReliefCard(Hand.cardById(cid));
+        });
+        if (idx >= 0) {
+          id = state.deck.splice(idx, 1)[0];
+          reliefPriority = true;
+        }
+      }
+      if (!id) id = state.deck.shift();
+
       state.hand.push(id);
-      Log.push("card_drawn", { cardId: id });
+      Log.push("card_drawn", { cardId: id, reliefPriority: reliefPriority });
       return id;
     },
     dealInitial(state, rng) {
@@ -269,13 +352,50 @@
       for (let i = 0; i < size; i++) this.drawOne(state, rng);
       Log.push("initial_hand", { hand: state.hand.slice(), balanced: false });
     },
-    play(state, handIndex, rng) {
+    play(state, handIndex, rng, options) {
+      options = options || {};
       if (handIndex < 0 || handIndex >= state.hand.length) return null;
       const cardId = state.hand.splice(handIndex, 1)[0];
       state.discard.push(cardId);
       Log.push("card_played", { cardId: cardId, eventId: state.selectedEventId });
-      if (sys("handDraw")) this.drawOne(state, rng);
+      // 스탯 적용 후 드로우하려면 options.draw === false
+      if (sys("handDraw") && options.draw !== false) this.drawOne(state, rng);
       return this.cardById(cardId);
+    },
+  };
+
+  // ---------- Values (card ↔ deceased resonance) ----------
+  const Values = {
+    matches(state, card) {
+      if (!state || !card || !card.value) return false;
+      const list = state.values || [];
+      return list.indexOf(card.value) >= 0;
+    },
+    // 0이 아닌 스탯 효과를 동일 방향으로 1씩 강화
+    amplify(delta) {
+      const d = delta || 0;
+      if (d === 0) return 0;
+      return d > 0 ? d + 1 : d - 1;
+    },
+    resolveDeltas(state, card) {
+      const baseTrust = card.trustDelta || 0;
+      const baseStress = card.stressDelta || 0;
+      const matched = this.matches(state, card);
+      let trustDelta = baseTrust;
+      let stressDelta = baseStress;
+      if (matched) {
+        trustDelta = this.amplify(baseTrust);
+        stressDelta = this.amplify(baseStress);
+      }
+      const damp = StressGuard.dampPositive(state, stressDelta);
+      return {
+        matched: matched,
+        value: card.value || null,
+        trustDelta: trustDelta,
+        stressDelta: damp.stressDelta,
+        stressDampened: damp.dampened,
+        stressBeforeDamp: damp.dampened ? damp.before : damp.stressDelta,
+      };
     },
   };
 
@@ -438,6 +558,7 @@
       failStreakFact: 0,
       failStreakEmotion: 0,
       lastResult: null,
+      pendingReveal: null,
       guidePhase: "trial_start", // trial_start | pick_card | card_selected
       rng: rng || Math.random,
     };
@@ -527,8 +648,25 @@
         return { ok: false, reason: "info_complete", card: preview, event: ev };
       }
 
-      const card = Hand.play(s, handIndex, s.rng);
-      Stats.apply(s, card.trustDelta, card.stressDelta);
+      const card = Hand.play(s, handIndex, s.rng, { draw: false });
+      const deltas = Values.resolveDeltas(s, card);
+      Stats.apply(s, deltas.trustDelta, deltas.stressDelta);
+      if (deltas.matched) {
+        Log.push("value_resonance", {
+          value: deltas.value,
+          base: { trust: card.trustDelta || 0, stress: card.stressDelta || 0 },
+          applied: { trust: deltas.trustDelta, stress: deltas.stressDelta },
+        });
+      }
+      if (deltas.stressDampened) {
+        Log.push("stress_dampened", {
+          from: deltas.stressBeforeDamp,
+          to: deltas.stressDelta,
+          stress: s.stress,
+          dampenFrom: StressGuard.dampenFrom(),
+        });
+      }
+      if (sys("handDraw")) Hand.drawOne(s, s.rng);
 
       if (sys("courtTimeGauge")) {
         const ct = bal().courtTime || {};
@@ -539,30 +677,96 @@
       }
 
       s.guidePhase = "pick_card";
+      s.pendingReveal = null;
 
       const roll = Unlock.roll(s, kind, s.rng);
       let reveal = null;
+      let needChoose = false;
+      let choices = [];
+
       if (roll.success) {
-        reveal = Events.revealNext(s, kind);
+        choices = Events.hiddenChoices(s, kind).map(function (info) {
+          return {
+            id: info.id,
+            keyword: info.keyword || (kind === "FACT" ? "사실" : "감정"),
+            unlocksEventId: info.unlocksEventId || null,
+          };
+        });
+        if (choices.length === 1) {
+          reveal = Events.revealById(s, kind, choices[0].id);
+        } else if (choices.length > 1) {
+          needChoose = true;
+          s.pendingReveal = {
+            kind: kind,
+            eventId: ev.id,
+            choiceIds: choices.map(function (c) {
+              return c.id;
+            }),
+          };
+          Log.push("reveal_choice_open", { kind: kind, choices: choices.map(function (c) {
+            return c.id;
+          }) });
+        }
       }
 
-      const broken = Soul.check(s);
-      const timeOut = !broken && CourtTime.check(s);
-      if (broken || timeOut) Log.enterVerdict();
+      // 키워드 선택은 획득한 해금이므로, 선택 대기 중에는 강제 판결을 미룸
+      let broken = false;
+      let timeOut = false;
+      if (!needChoose) {
+        broken = Soul.check(s);
+        timeOut = !broken && CourtTime.check(s);
+        if (broken || timeOut) Log.enterVerdict();
+      }
 
       const result = {
         ok: true,
         card: card,
         roll: roll,
         reveal: reveal,
+        needChoose: needChoose,
+        choices: choices,
         soulBroken: broken,
         timeExpired: timeOut || s.timeExpired,
         trust: s.trust,
         stress: s.stress,
         hand: s.hand.slice(),
+        valueMatch: deltas.matched,
+        value: deltas.value,
+        appliedDeltas: { trust: deltas.trustDelta, stress: deltas.stressDelta },
+        stressDampened: !!deltas.stressDampened,
       };
       s.lastResult = result;
       return result;
+    },
+
+    confirmReveal(infoId) {
+      const s = this.state;
+      if (!s || !s.pendingReveal) return { ok: false, reason: "no_pending" };
+      const pending = s.pendingReveal;
+      if (pending.choiceIds.indexOf(infoId) < 0) return { ok: false, reason: "bad_choice" };
+
+      const reveal = Events.revealById(s, pending.kind, infoId);
+      s.pendingReveal = null;
+      Log.push("reveal_choice_confirm", { infoId: infoId, kind: pending.kind });
+
+      const broken = Soul.check(s);
+      const timeOut = !broken && CourtTime.check(s);
+      if (broken || timeOut) Log.enterVerdict();
+
+      const result = {
+        ok: !!reveal.ok,
+        reveal: reveal,
+        soulBroken: broken,
+        timeExpired: timeOut || s.timeExpired,
+        trust: s.trust,
+        stress: s.stress,
+      };
+      s.lastResult = result;
+      return result;
+    },
+
+    hasPendingReveal() {
+      return !!(this.state && this.state.pendingReveal);
     },
 
     openVerdict(forced) {
@@ -640,12 +844,41 @@
       const b = bal();
       const tMax = (b.trust && b.trust.max) || 10;
       const sMax = (b.stress && b.stress.max) || 10;
-      const nextTrust = clamp(this.state.trust + (card.trustDelta || 0), (b.trust && b.trust.min) || 0, tMax);
-      const nextStress = clamp(this.state.stress + (card.stressDelta || 0), (b.stress && b.stress.min) || 0, sMax);
-      const fake = { trust: nextTrust, stress: nextStress, failStreakFact: this.state.failStreakFact, failStreakEmotion: this.state.failStreakEmotion };
+      const deltas = Values.resolveDeltas(this.state, card);
+      const nextTrust = clamp(this.state.trust + deltas.trustDelta, (b.trust && b.trust.min) || 0, tMax);
+      const nextStress = clamp(this.state.stress + deltas.stressDelta, (b.stress && b.stress.min) || 0, sMax);
+      const fake = {
+        trust: nextTrust,
+        stress: nextStress,
+        failStreakFact: this.state.failStreakFact,
+        failStreakEmotion: this.state.failStreakEmotion,
+      };
       const p = Unlock.chance(fake, card.type);
       const soulRisk = sys("soulBreak") && nextStress >= sMax;
-      return { nextTrust: nextTrust, nextStress: nextStress, unlockP: p, soulRisk: soulRisk };
+      return {
+        nextTrust: nextTrust,
+        nextStress: nextStress,
+        unlockP: p,
+        soulRisk: soulRisk,
+        valueMatch: deltas.matched,
+        value: deltas.value,
+        trustDelta: deltas.trustDelta,
+        stressDelta: deltas.stressDelta,
+        stressDampened: !!deltas.stressDampened,
+      };
+    },
+
+    cardDeltas(card) {
+      if (!card) return null;
+      return Values.resolveDeltas(this.state, card);
+    },
+
+    stressDampenFrom() {
+      return StressGuard.dampenFrom();
+    },
+
+    isHighStress() {
+      return !!(this.state && this.state.stress >= StressGuard.dampenFrom());
     },
 
     downloadLog() {

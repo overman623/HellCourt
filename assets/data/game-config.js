@@ -26,7 +26,8 @@
 
     balance: {
       trust: { min: 0, max: 10, start: 5 },
-      stress: { min: 0, max: 10, start: 5 },
+      // start 낮춤 + 고구간 댐핑으로 조기 영혼 파괴 완화
+      stress: { min: 0, max: 10, start: 3, dampenFrom: 8, maxPositiveDelta: 1 },
       courtTime: { min: 0, max: 10, start: 10, costPerQuestion: 1 },
       // 공개 키워드(사실+감정)가 이 미만이면 업보 UI
       karma: { minRevealedKeywords: 3 },
