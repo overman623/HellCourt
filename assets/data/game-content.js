@@ -1,0 +1,678 @@
+(function () {
+  /*
+   * 지옥법정 — 플레이테스트용 망자 케이스
+   * cases[] 각 항목: deceased / identityFactId / achievements / events
+   * questionCards·art·audio 는 공용
+   */
+  window.GAME_CONTENT = {
+    version: "mvp-case-03",
+
+    cases: [
+      {
+        id: "case_hansora",
+        deceased: {
+          id: "deceased_01",
+          trueName: "한소라",
+          anonymousLabel: "이름 불명",
+          courtName: "ㅁㅁ법정",
+          intro: "익명의 망자가 법정에 섰다. 최초로 열린 인생사건부터, 사실과 감정을 심문하라.",
+          profileNote: "판결 전까지는 신원이 가려진 망자. 희생과 다짐의 흔적이 짙다.",
+        },
+        identityFactId: "ev1_fact_3",
+        achievements: [
+          {
+            id: "ach_identity",
+            title: "이름 복원",
+            desc: "이름표를 통해 망자의 이름을 되찾았다.",
+            require: { nameRevealed: true },
+          },
+          {
+            id: "ach_promise",
+            title: "깨진 약속",
+            desc: "어린 날의 약속에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "ev_childhood" },
+          },
+          {
+            id: "ach_station_open",
+            title: "비 오는 밤",
+            desc: "다짐이 향하는 다음 인생사건을 열었다.",
+            require: { eventUnlocked: "ev_station" },
+          },
+          {
+            id: "ach_station_truth",
+            title: "함께 남은 밤",
+            desc: "비 오는 정류장에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "ev_station" },
+          },
+          {
+            id: "ach_fire_open",
+            title: "불길의 기억",
+            desc: "감정 추적 끝에 불길 속의 선택을 열었다.",
+            require: { eventUnlocked: "ev_fire" },
+          },
+          {
+            id: "ach_fire_truth",
+            title: "남겨진 선택",
+            desc: "불길 속의 선택에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "ev_fire" },
+          },
+          {
+            id: "ach_heart",
+            title: "숨긴 마음",
+            desc: "어느 인생사건에서든 감정을 모두 파헤쳤다.",
+            require: { anyEventEmotionsComplete: true },
+          },
+        ],
+        events: [
+          {
+            id: "ev_childhood",
+            title: "어린 날의 약속",
+            startUnlocked: true,
+            summary: "데리러 오겠다던 엄마는 오지 않았고, 옷깃의 이름표만 남았다.",
+            facts: [
+              {
+                id: "ev1_fact_1",
+                keyword: "기다림",
+                text: "어릴 적, 엄마는 ‘조금만 기다려. 꼭 데리러 올게’ 하고는 낡은 다리 위에 그를 남겨 두었다.",
+              },
+              {
+                id: "ev1_fact_2",
+                keyword: "배신",
+                text: "그날 해질 때까지 엄마는 나타나지 않았다. 다리 위에는 아이 하나만 남았다.",
+              },
+              {
+                id: "ev1_fact_3",
+                keyword: "이름표",
+                text: "엄마는 오지 않았지만, 옷깃에 달아 둔 이름표만은 남았다. 거기에는 ‘한소라’라고 적혀 있었다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "ev1_emo_1",
+                keyword: "버려짐",
+                text: "기다림보다 먼저 남은 것은, 엄마에게 버려졌다는 감각이었다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ev1_emo_2",
+                keyword: "자기혐오",
+                text: "이름표를 만질 때마다 그날이 되살아났다. 그는 그 빈자리를 미워하며, ‘다시는 누군가를 혼자 남겨 두지 않겠다’고 다짐했다.",
+                unlocksEventId: "ev_station",
+              },
+              {
+                id: "ev1_emo_3",
+                keyword: "미련",
+                text: "그래도 일요일이면 발끝이 다리 쪽으로 기울었다. 버려진 쪽의 기분은 지워지지 않았다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+          {
+            id: "ev_station",
+            title: "비 오는 정류장",
+            startUnlocked: false,
+            summary: "혼자 남겨진 아이를 보고, 다짐을 처음으로 지킨 밤.",
+            facts: [
+              {
+                id: "ev_st_fact_1",
+                keyword: "발견",
+                text: "비 오는 밤, 정류장에 아이 하나가 우산을 쓴 채 서 있었다. 데리러 올 사람은 보이지 않았다.",
+              },
+              {
+                id: "ev_st_fact_2",
+                keyword: "동행",
+                text: "그는 지나치지 않았다. 말없이 아이 옆에 서서, 버스가 오고 가는 동안 함께 비를 맞았다.",
+              },
+              {
+                id: "ev_st_fact_3",
+                keyword: "인계",
+                text: "늦은 시각, 그는 아이를 지구대로 데려다 주었다. 그날만큼은 누구도 정류장에 혼자 남지 않았다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "ev_st_emo_1",
+                keyword: "투영",
+                text: "아이의 뒷모습에서, 다리 위에 서 있던 자신이 겹쳐 보였다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ev_st_emo_2",
+                keyword: "안도",
+                text: "다짐을 한 번은 지켰다는 안도가 생겼다. 동시에, 지키지 못할 순간이 올지도 모른다는 예감도 생겼다.",
+                unlocksEventId: "ev_fire",
+              },
+              {
+                id: "ev_st_emo_3",
+                keyword: "균열",
+                text: "만약 그날 정류장에 아이와 어른이 둘이었다면, 그는 어디에 섰을지 스스로도 몰랐다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+          {
+            id: "ev_fire",
+            title: "불길 속의 선택",
+            startUnlocked: false,
+            summary: "관계없는 어머니와 아이 중 하나를 구하려다, 그는 불길 속에서 생을 마쳤다.",
+            facts: [
+              {
+                id: "ev2_fact_1",
+                keyword: "재진입",
+                text: "불이 난 건물 안에, 그와는 아무 연고 없는 어머니와 아이가 갇혀 있었다. 그는 둘을 발견하고 구조에 나섰다.",
+              },
+              {
+                id: "ev2_fact_2",
+                keyword: "한 명만",
+                text: "무너지는 천장은 둘을 한꺼번에 끌어낼 시간을 주지 않았다. 살릴 수 있는 목숨은 하나뿐이었다.",
+              },
+              {
+                id: "ev2_fact_3",
+                keyword: "선택",
+                text: "그는 어머니와 아이 중 하나를 밀어 내고, 자신은 그 자리에 남았다. 한쪽은 살았고, 그는 불길 속에서 죽었다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "ev2_emo_1",
+                keyword: "환영",
+                text: "둘을 보는 순간, 정류장의 아이와 다리 위의 자신이 한꺼번에 겹쳤다. 남기지 말아야 할 쪽만 선명했다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ev2_emo_2",
+                keyword: "침묵",
+                text: "왜 그 하나를 골랐느냐는 물음에, 그는 대답할 숨을 남기지 못했다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ev2_emo_3",
+                keyword: "죄책",
+                text: "살린 쪽의 발소리가 멀어질수록, 남겨 둔 쪽의 숨과 자신의 숨이 같은 재 속에서 섞였다. 정류장에서 지키던 다짐은, 여기서 반만 남았다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+        ],
+      },
+
+      {
+        id: "case_kangsehoon",
+        deceased: {
+          id: "deceased_02",
+          trueName: "강세훈",
+          anonymousLabel: "이름 불명",
+          courtName: "ㅁㅁ법정",
+          intro: "또 다른 망자가 법정에 섰다. 이번에는 손익과 침묵의 흔적부터 심문하라.",
+          profileNote: "판결 전까지는 신원이 가려진 망자. 타인의 대가를 밟고 올라선 흔적이 짙다.",
+        },
+        identityFactId: "ks_ev1_fact_3",
+        achievements: [
+          {
+            id: "ks_ach_identity",
+            title: "장부의 이름",
+            desc: "장부에서 망자의 이름을 확인했다.",
+            require: { nameRevealed: true },
+          },
+          {
+            id: "ks_ach_ledger",
+            title: "구멍난 숫자",
+            desc: "장부의 구멍에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "ks_ledger" },
+          },
+          {
+            id: "ks_ach_silence_open",
+            title: "입막음",
+            desc: "다음 인생사건 입막음을 열었다.",
+            require: { eventUnlocked: "ks_silence" },
+          },
+          {
+            id: "ks_ach_silence",
+            title: "위조된 말",
+            desc: "입막음에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "ks_silence" },
+          },
+          {
+            id: "ks_ach_door_open",
+            title: "닫힌 문",
+            desc: "마지막 인생사건 닫힌 문을 열었다.",
+            require: { eventUnlocked: "ks_door" },
+          },
+          {
+            id: "ks_ach_door",
+            title: "남겨진 경보",
+            desc: "닫힌 문에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "ks_door" },
+          },
+          {
+            id: "ks_ach_heart",
+            title: "숨긴 속내",
+            desc: "어느 인생사건에서든 감정을 모두 파헤쳤다.",
+            require: { anyEventEmotionsComplete: true },
+          },
+        ],
+        events: [
+          {
+            id: "ks_ledger",
+            title: "장부의 구멍",
+            startUnlocked: true,
+            summary: "회사 돈을 빼돌리고, 그 구멍을 다른 사람 탓으로 메웠다.",
+            facts: [
+              {
+                id: "ks_ev1_fact_1",
+                keyword: "횡령",
+                text: "그는 거래처 대금의 일부를 빼돌려 개인 계좌로 옮겼다. 장부에는 ‘누락’으로만 남겼다.",
+              },
+              {
+                id: "ks_ev1_fact_2",
+                keyword: "떠넘김",
+                text: "감사가 시작되자, 그는 후배의 접속 기록로 이체 기록을 다시 심어 넣었다.",
+              },
+              {
+                id: "ks_ev1_fact_3",
+                keyword: "장부",
+                text: "빼돌린 돈을 적은 비장부 맨 위에는 ‘강세훈’이라는 이름이 그대로 적혀 있었다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "ks_ev1_emo_1",
+                keyword: "쾌감",
+                text: "구멍이 메워지는 소리를 들으며, 그는 안도가 아니라 이겼다는 쾌감을 느꼈다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ks_ev1_emo_2",
+                keyword: "경멸",
+                text: "울면서 변명하는 후배가 한심해 보였다. ‘원래 그렇게 쉽게 밟히는 자리’라고 속으로 말했다.",
+                unlocksEventId: "ks_silence",
+              },
+              {
+                id: "ks_ev1_emo_3",
+                keyword: "탐닉",
+                text: "한 번 통하자, 다음 구멍은 더 커도 된다고 생각했다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+          {
+            id: "ks_silence",
+            title: "입막음",
+            startUnlocked: false,
+            summary: "진실이 새어 나오려 하자, 말로 입을 막았다.",
+            facts: [
+              {
+                id: "ks_ev2_fact_1",
+                keyword: "폭로",
+                text: "후배는 징계 뒤에도 조사를 포기하지 않았다. 내부 제보 메일을 쓰려 했다.",
+              },
+              {
+                id: "ks_ev2_fact_2",
+                keyword: "위증",
+                text: "그는 조작한 대화 기록을 제출하고, 후배가 먼저 돈을 요구했다고 증언했다.",
+              },
+              {
+                id: "ks_ev2_fact_3",
+                keyword: "파멸",
+                text: "후배는 해고에 이어 사기 혐의로 입건되었다. 그는 그 주, 승진 후보 명단에 올랐다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "ks_ev2_emo_1",
+                keyword: "짜증",
+                text: "끝나지 않고 물고 늘어지는 후배가 성가셨다. 양심이 아니라 소음으로 들렸다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ks_ev2_emo_2",
+                keyword: "합리화",
+                text: "‘내가 안 밟으면 다른 사람이 밟았을 것’이라고 되뇌었다. 그 말이 곧 면죄부가 되었다.",
+                unlocksEventId: "ks_door",
+              },
+              {
+                id: "ks_ev2_emo_3",
+                keyword: "공허",
+                text: "승진 축하 자리에서 웃으면서도, 축하받는 이유가 가짜라는 감각만은 남았다. 그래도 멈추지 않았다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+          {
+            id: "ks_door",
+            title: "닫힌 문",
+            startUnlocked: false,
+            summary: "위험을 알고도 문을 닫았고, 도망치다 생을 마쳤다.",
+            facts: [
+              {
+                id: "ks_ev3_fact_1",
+                keyword: "인지",
+                text: "창고 안전 점검은 허위로 통과된 상태였다. 그는 야근조가 안에 남아 있다는 것도 알고 있었다.",
+              },
+              {
+                id: "ks_ev3_fact_2",
+                keyword: "방치",
+                text: "경보가 울렸을 때 그는 이미 밖으로 나와 있었다. 문을 잠그고, 장부와 현금을 챙긴 채 자리를 떴다.",
+              },
+              {
+                id: "ks_ev3_fact_3",
+                keyword: "도주",
+                text: "야근조 중 일부가 숨졌다. 수사가 좁혀 오자 그는 도주했고, 고속도로에서 사고로 죽었다. 차 안에서 그 장부가 나왔다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "ks_ev3_emo_1",
+                keyword: "계산",
+                text: "문을 잠글 때 머릿속에는 사람보다 ‘증거’와 ‘잔고’가 먼저 있었다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ks_ev3_emo_2",
+                keyword: "외면",
+                text: "뒤에서 들리던 고함은, 들리지 않는 척하기에 알맞은 크기였다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "ks_ev3_emo_3",
+                keyword: "자기보존",
+                text: "마지막까지 두려워한 것은 죽은 이들이 아니라, 자신이 붙잡히는 일이었다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+        ],
+      },
+
+      {
+        id: "case_junghayoon",
+        deceased: {
+          id: "deceased_03",
+          trueName: "정하윤",
+          anonymousLabel: "이름 불명",
+          courtName: "ㅁㅁ법정",
+          intro: "세 번째 망자가 법정에 섰다. 보호와 방조가 겹친 흔적부터 심문하라.",
+          profileNote: "판결 전까지는 신원이 가려진 망자. 사랑으로 감싼 선택이, 다른 목숨을 스치게 했다.",
+        },
+        identityFactId: "hy_ev1_fact_3",
+        achievements: [
+          {
+            id: "hy_ach_identity",
+            title: "동생의 호칭",
+            desc: "남겨진 메모에서 망자의 이름을 확인했다.",
+            require: { nameRevealed: true },
+          },
+          {
+            id: "hy_ach_night",
+            title: "숨긴 밤",
+            desc: "숨긴 밤에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "hy_night" },
+          },
+          {
+            id: "hy_ach_second_open",
+            title: "두 번째 사고",
+            desc: "다음 인생사건 두 번째 사고를 열었다.",
+            require: { eventUnlocked: "hy_second" },
+          },
+          {
+            id: "hy_ach_second",
+            title: "미룬 신고",
+            desc: "두 번째 사고에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "hy_second" },
+          },
+          {
+            id: "hy_ach_end_open",
+            title: "마지막 말",
+            desc: "마지막 인생사건을 열었다.",
+            require: { eventUnlocked: "hy_last" },
+          },
+          {
+            id: "hy_ach_last",
+            title: "멈춘 손",
+            desc: "마지막 말에서 모든 사실을 공개했다.",
+            require: { eventFactsComplete: "hy_last" },
+          },
+          {
+            id: "hy_ach_heart",
+            title: "흔들린 마음",
+            desc: "어느 인생사건에서든 감정을 모두 파헤쳤다.",
+            require: { anyEventEmotionsComplete: true },
+          },
+        ],
+        events: [
+          {
+            id: "hy_night",
+            title: "숨긴 밤",
+            startUnlocked: true,
+            summary: "동생의 사고를 감추고, 그 밤을 함께 묻었다.",
+            facts: [
+              {
+                id: "hy_ev1_fact_1",
+                keyword: "충돌",
+                text: "동생이 취한 채 사람을 치고 도망쳤다. 그는 현장에 가장 먼저 도착했다.",
+              },
+              {
+                id: "hy_ev1_fact_2",
+                keyword: "은닉",
+                text: "그는 동생을 집으로 데려가 옷을 태우고, 차량 수리를 비밀로 맡겼다. 신고는 하지 않았다.",
+              },
+              {
+                id: "hy_ev1_fact_3",
+                keyword: "메모",
+                text: "그날 남긴 메모에는 ‘하윤아, 나만 믿어’라고 적혀 있었고, 서명란에 ‘정하윤’이 남아 있었다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "hy_ev1_emo_1",
+                keyword: "공포",
+                text: "피보다 먼저 덮친 것은, 동생을 잃을지도 모른다는 공포였다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "hy_ev1_emo_2",
+                keyword: "보호",
+                text: "옳은지보다 ‘내가 막아야 한다’는 생각만 남았다. 그 밤의 침묵이 곧 보호라고 믿었다.",
+                unlocksEventId: "hy_second",
+              },
+              {
+                id: "hy_ev1_emo_3",
+                keyword: "금기",
+                text: "피해자 이야기를 들을 때마다 입을 다물었다. 말하기 시작하는 순간, 동생이 끝장날 것 같았다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+          {
+            id: "hy_second",
+            title: "두 번째 사고",
+            startUnlocked: false,
+            summary: "다시 사고가 났을 때, 그는 신고를 미뤘다.",
+            facts: [
+              {
+                id: "hy_ev2_fact_1",
+                keyword: "재발",
+                text: "몇 달 뒤 동생이 또 사람을 다치게 했다. 그는 전화를 받고도 즉시 신고하지 않았다.",
+              },
+              {
+                id: "hy_ev2_fact_2",
+                keyword: "지연",
+                text: "병원으로 가기 전, 동생과 이야기를 나누느라 시간이 흘렀다. 그 사이 피해자의 상태가 악화되었다.",
+              },
+              {
+                id: "hy_ev2_fact_3",
+                keyword: "후유",
+                text: "피해자는 살아남았지만 큰 장애를 얻었다. 그는 그제야 경찰에 일부를 진술했다. 전부는 아니었다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "hy_ev2_emo_1",
+                keyword: "후회",
+                text: "첫 밤을 숨기지 않았다면 두 번째는 없었을지 모른다는 생각이, 뒤늦게 뼈를 파고들었다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "hy_ev2_emo_2",
+                keyword: "분열",
+                text: "동생을 미워하면서도 버릴 수 없었다. 신고해야 한다는 목소리와, 지켜줘야 한다는 목소리가 동시에 울렸다.",
+                unlocksEventId: "hy_last",
+              },
+              {
+                id: "hy_ev2_emo_3",
+                keyword: "부채",
+                text: "피해자의 가족을 볼 때마다, 자신이 훔친 시간만큼 빚을 졌다는 감각이 남았다.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+          {
+            id: "hy_last",
+            title: "마지막 말",
+            startUnlocked: false,
+            summary: "세 번째를 막으려다, 그와 동생 모두 끝을 맞았다.",
+            facts: [
+              {
+                id: "hy_ev3_fact_1",
+                keyword: "예고",
+                text: "동생이 또 술을 마시고 운전하려 했다. 그는 열쇠를 빼앗으려 막아서다.",
+              },
+              {
+                id: "hy_ev3_fact_2",
+                keyword: "몸싸움",
+                text: "실랑이가 격해졌고, 계단에서 둘 다 굴러떨어졌다. 동생은 그 자리에서 숨을 거두었다.",
+              },
+              {
+                id: "hy_ev3_fact_3",
+                keyword: "공멸",
+                text: "그 역시 크게 다쳐 며칠 뒤 죽었다. 주변에선 ‘말리다가’와 ‘싸움 끝에’가 동시에 오갔다.",
+              },
+            ],
+            emotions: [
+              {
+                id: "hy_ev3_emo_1",
+                keyword: "결단",
+                text: "열쇠를 잡을 때만큼은, 이번에는 누군가를 다치게 두지 않겠다고 생각했다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "hy_ev3_emo_2",
+                keyword: "혼란",
+                text: "동생의 숨이 멎는 순간, 구한 것인지 해친 것인지 스스로도 갈라졌다.",
+                unlocksEventId: null,
+              },
+              {
+                id: "hy_ev3_emo_3",
+                keyword: "미결",
+                text: "마지막까지 남은 질문은 하나였다. 처음부터 경찰을 불렀다면, 누가 살았을까.",
+                unlocksEventId: null,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+
+    questionCards: [
+      {
+        id: "qc_f01",
+        text: "그날의 일정을 처음부터 말하십시오.",
+        type: "FACT",
+        trustDelta: 1,
+        stressDelta: 0,
+        desc: "시간 순서 확인. 신뢰↑",
+      },
+      {
+        id: "qc_f02",
+        text: "당신이 마지막으로 본 것은 무엇입니까?",
+        type: "FACT",
+        trustDelta: 2,
+        stressDelta: 1,
+        desc: "현장 사실. 신뢰↑↑, 스트레스↑",
+      },
+      {
+        id: "qc_f03",
+        text: "그 결정을 누가 먼저 제안했습니까?",
+        type: "FACT",
+        trustDelta: 1,
+        stressDelta: -2,
+        desc: "책임의 시작점. 신뢰↑, 스트레스↓↓",
+      },
+      {
+        id: "qc_f04",
+        text: "거짓말할 이유가 있었습니까?",
+        type: "FACT",
+        trustDelta: -1,
+        stressDelta: 2,
+        desc: "모순 추궁. 신뢰↓, 스트레스↑↑",
+      },
+      {
+        id: "qc_f05",
+        text: "남겨진 증거는 어디에 있습니까?",
+        type: "FACT",
+        trustDelta: 0,
+        stressDelta: 1,
+        desc: "물증 추적. 스트레스↑",
+      },
+      {
+        id: "qc_e01",
+        text: "그 순간, 가슴이 무거웠습니까?",
+        type: "EMOTION",
+        trustDelta: 0,
+        stressDelta: 1,
+        desc: "표면 감정. 스트레스↑",
+      },
+      {
+        id: "qc_e02",
+        text: "누구를 위해 침묵했습니까?",
+        type: "EMOTION",
+        trustDelta: -1,
+        stressDelta: 2,
+        desc: "숨긴 의도. 신뢰↓, 스트레스↑↑",
+      },
+      {
+        id: "qc_e03",
+        text: "지금도 그날을 용서합니까?",
+        type: "EMOTION",
+        trustDelta: 1,
+        stressDelta: 2,
+        desc: "자기 심판. 신뢰↑, 스트레스↑↑",
+      },
+      {
+        id: "qc_e04",
+        text: "당신을 붙잡은 희망은 무엇이었습니까?",
+        type: "EMOTION",
+        trustDelta: 1,
+        stressDelta: -3,
+        desc: "완화 감정. 신뢰↑, 스트레스↓↓↓",
+      },
+      {
+        id: "qc_e05",
+        text: "지옥에 떨어져도 같은 선택을 하겠습니까?",
+        type: "EMOTION",
+        trustDelta: 0,
+        stressDelta: 3,
+        desc: "고위험 심문. 스트레스↑↑↑",
+      },
+    ],
+
+    art: {
+      paths: {
+        titleBg: "assets/images/ui/TitleBG.png",
+        ingameBg: "assets/images/ui/IngameBG.png",
+        questionCard: "assets/images/ui/QuestionCard.png",
+        verdictGuilty: "assets/images/ui/VerdictGuilty.png",
+        verdictInnocent: "assets/images/ui/VerdictInnocent.png",
+        stageSoul: "assets/images/ui/StageSoul.png",
+      },
+    },
+
+    audio: {
+      bgm: "assets/audio/bgm_strict_verdict.mp3",
+      bgmHeaven: "assets/audio/bgm_heaven_end.wav",
+      bgmHell: "assets/audio/bgm_hell_end.wav",
+      uiSelect: "assets/audio/ui_select.wav",
+      uiConfirm: "assets/audio/ui_confirm.mp3",
+    },
+  };
+})();
