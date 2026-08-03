@@ -227,10 +227,7 @@
       if (kind === "FACT" && sys("identityReveal") && info.id === state.identityFactId) {
         state.nameRevealed = true;
         state.displayName = state.trueName;
-        state.courtName = state.trueName + " 법정";
-        try {
-          localStorage.setItem("hellcourt.court." + (state.deceasedId || state.caseId), state.courtName);
-        } catch (e) {}
+        state.courtName = "공정의 법정";
         result.nameRevealed = true;
         Log.push("name_revealed", { name: state.trueName, fromFactId: info.id });
       }
@@ -323,6 +320,215 @@
         return { ok: false, reason: "complete", event: ev };
       }
       return this.revealById(state, kind, next.id);
+    },
+    // 선택 사건의 숨은 키워드 중 무작위로 count개 공개 (카드 보너스 효과용)
+    revealRandom(state, kind, rng, count) {
+      count = count != null ? count : 1;
+      const reveals = [];
+      for (let i = 0; i < count; i++) {
+        const hidden = this.hiddenChoices(state, kind);
+        if (!hidden.length) break;
+        const pick = hidden[Math.floor((rng || Math.random)() * hidden.length)];
+        const r = this.revealById(state, kind, pick.id);
+        if (r.ok) reveals.push(r);
+      }
+      return reveals;
+    },
+    // id로 숨은 키워드 찾기 (선택 사건 우선, 없으면 해금된 사건)
+    findHiddenById(state, infoId) {
+      if (!infoId) return null;
+      const tryList = function (ev, kind) {
+        const list = kind === "FACT" ? ev.facts || [] : ev.emotions || [];
+        const info = list.find(function (x) {
+          return x && x.id === infoId && !x.revealed;
+        });
+        return info ? { event: ev, kind: kind, info: info } : null;
+      };
+      const selected = this.selected(state);
+      if (selected) {
+        const a = tryList(selected, "FACT") || tryList(selected, "EMOTION");
+        if (a) return a;
+      }
+      const events = state.events || [];
+      for (let i = 0; i < events.length; i++) {
+        const ev = events[i];
+        if (!ev || !ev.unlocked) continue;
+        if (selected && ev.id === selected.id) continue;
+        const hit = tryList(ev, "FACT") || tryList(ev, "EMOTION");
+        if (hit) return hit;
+      }
+      return null;
+    },
+    findHiddenByKeyword(state, keyword) {
+      if (!keyword) return null;
+      const ev = this.selected(state);
+      if (!ev) return null;
+      const scan = function (kind) {
+        const list = kind === "FACT" ? ev.facts || [] : ev.emotions || [];
+        const info = list.find(function (x) {
+          return x && !x.revealed && x.keyword === keyword;
+        });
+        return info ? { event: ev, kind: kind, info: info } : null;
+      };
+      return scan("FACT") || scan("EMOTION");
+    },
+    findIdentityHidden(state) {
+      const id = state.identityFactId;
+      if (!id) return null;
+      const hit = this.findHiddenById(state, id);
+      if (!hit || hit.kind !== "FACT") return null;
+      return hit;
+    },
+    // 선택 사건에서 다음 사건을 여는 숨은 감정 (미해금 사건 링크 우선)
+    findEventLinkHidden(state, rng) {
+      const hidden = this.hiddenChoices(state, "EMOTION").filter(function (x) {
+        return !!x.unlocksEventId;
+      });
+      if (!hidden.length) return null;
+      const self = this;
+      const useful = hidden.filter(function (x) {
+        const linked = self.find(state, x.unlocksEventId);
+        return linked && !linked.unlocked;
+      });
+      const pool = useful.length ? useful : hidden;
+      const pick = pool[Math.floor((rng || Math.random)() * pool.length)];
+      return pick ? { event: this.selected(state), kind: "EMOTION", info: pick } : null;
+    },
+    revealAt(state, hit) {
+      if (!hit || !hit.info) return { ok: false, reason: "no_hit" };
+      const prev = state.selectedEventId;
+      if (hit.event && hit.event.id !== prev) {
+        state.selectedEventId = hit.event.id;
+      }
+      const r = this.revealById(state, hit.kind, hit.info.id);
+      if (hit.event && hit.event.id !== prev) {
+        state.selectedEventId = prev;
+      }
+      return r;
+    },
+  };
+
+  // ---------- Card special effects ----------
+  const CardEffect = {
+    hasReveal(effect) {
+      if (!effect) return false;
+      return !!(
+        effect.randomReveal ||
+        effect.revealTarget ||
+        effect.revealKeyword ||
+        (effect.revealIds && effect.revealIds.length)
+      );
+    },
+    hasAny(effect) {
+      if (!effect) return false;
+      return this.hasReveal(effect) || !!(effect.noStatIncrease && effect.noStatIncrease.chance);
+    },
+    // 상승분(양수) 스탯을 일정 확률로 0으로 — 감소/완화는 유지
+    applyStatMod(deltas, effect, rng) {
+      const out = {
+        trustDelta: deltas.trustDelta,
+        stressDelta: deltas.stressDelta,
+        noStatIncrease: false,
+        noStatIncreaseChance: 0,
+      };
+      const cfg = effect && effect.noStatIncrease;
+      if (!cfg) return out;
+      const chance = cfg.chance != null ? cfg.chance : 0;
+      out.noStatIncreaseChance = chance;
+      if (chance <= 0) return out;
+      if ((rng || Math.random)() >= chance) return out;
+
+      let changed = false;
+      if (out.trustDelta > 0) {
+        out.trustDelta = 0;
+        changed = true;
+      }
+      if (out.stressDelta > 0) {
+        out.stressDelta = 0;
+        changed = true;
+      }
+      out.noStatIncrease = changed;
+      return out;
+    },
+    apply(state, effect, rng) {
+      if (!effect || !this.hasReveal(effect)) return [];
+      const reveals = [];
+      const seen = {};
+
+      function pushReveal(r) {
+        if (!r || !r.ok || !r.info) return;
+        if (seen[r.info.id]) return;
+        seen[r.info.id] = true;
+        reveals.push(r);
+      }
+
+      if (effect.revealTarget === "identity") {
+        pushReveal(Events.revealAt(state, Events.findIdentityHidden(state)));
+      } else if (effect.revealTarget === "eventLink") {
+        pushReveal(Events.revealAt(state, Events.findEventLinkHidden(state, rng)));
+      }
+
+      if (effect.revealKeyword) {
+        pushReveal(Events.revealAt(state, Events.findHiddenByKeyword(state, effect.revealKeyword)));
+      }
+
+      if (effect.revealIds && effect.revealIds.length) {
+        for (let i = 0; i < effect.revealIds.length; i++) {
+          pushReveal(Events.revealAt(state, Events.findHiddenById(state, effect.revealIds[i])));
+        }
+      }
+
+      if (effect.randomReveal === "FACT" || effect.randomReveal === "EMOTION") {
+        const count = effect.count != null ? effect.count : 1;
+        const randoms = Events.revealRandom(state, effect.randomReveal, rng, count);
+        for (let j = 0; j < randoms.length; j++) pushReveal(randoms[j]);
+      }
+
+      if (reveals.length) {
+        Log.push("card_effect_reveal", {
+          effectId: effect.id || null,
+          revealTarget: effect.revealTarget || null,
+          revealKeyword: effect.revealKeyword || null,
+          count: reveals.length,
+          infoIds: reveals.map(function (r) {
+            return r.info && r.info.id;
+          }),
+          unlockedEventIds: reveals
+            .map(function (r) {
+              return r.unlockedEventId;
+            })
+            .filter(Boolean),
+        });
+      }
+      return reveals;
+    },
+    describe(effect) {
+      if (!effect) return [];
+      const lines = [];
+      if (effect.revealTarget === "identity") {
+        lines.push("특수 효과 — 신원 사실 해금");
+      } else if (effect.revealTarget === "eventLink") {
+        lines.push("특수 효과 — 다음 사건을 여는 감정 해금");
+      }
+      if (effect.revealKeyword) {
+        lines.push("특수 효과 — 키워드 「" + effect.revealKeyword + "」 해금");
+      }
+      if (effect.revealIds && effect.revealIds.length) {
+        lines.push("특수 효과 — 지정 정보 " + effect.revealIds.length + "개 해금");
+      }
+      if (effect.randomReveal === "FACT" || effect.randomReveal === "EMOTION") {
+        const kindLabel = effect.randomReveal === "FACT" ? "사실" : "감정";
+        const n = effect.count != null ? effect.count : 1;
+        lines.push("특수 효과 — " + kindLabel + " " + n + "개 추가 해금(무작위)");
+      }
+      if (effect.noStatIncrease && effect.noStatIncrease.chance > 0) {
+        lines.push(
+          "특수 효과 — " +
+            Math.round(effect.noStatIncrease.chance * 100) +
+            "% 확률로 스탯 상승 무효"
+        );
+      }
+      return lines;
     },
   };
 
@@ -605,15 +811,6 @@
     });
 
     const deceasedId = deceased.id || pack.id || "unknown";
-    const savedCourt = (function () {
-      try {
-        return localStorage.getItem("hellcourt.court." + deceasedId);
-      } catch (e) {
-        return null;
-      }
-    })();
-
-    const baseCourt = deceased.courtName || "ㅁㅁ법정";
     const falsePool = ((Content().falseFactPool || []).slice() || []).map(function (f) {
       return { keyword: f.keyword, text: f.text };
     });
@@ -625,8 +822,8 @@
       deceasedId: deceasedId,
       trueName: deceased.trueName || "???",
       displayName: labels().anonymousName || deceased.anonymousLabel || "이름 불명",
-      courtName: savedCourt || baseCourt,
-      defaultCourtName: baseCourt,
+      courtName: "공정의 법정",
+      defaultCourtName: "공정의 법정",
       nameRevealed: false,
       intro: deceased.intro || "",
       profileNote: deceased.profileNote || "",
@@ -742,15 +939,26 @@
 
       const card = Hand.play(s, handIndex, s.rng, { draw: false });
       const deltas = Values.resolveDeltas(s, card);
-      Stats.apply(s, deltas.trustDelta, deltas.stressDelta);
+      const statMod = CardEffect.applyStatMod(deltas, card.effect, s.rng);
+      const trustApplied = statMod.trustDelta;
+      const stressApplied = statMod.stressDelta;
+      Stats.apply(s, trustApplied, stressApplied);
+      if (statMod.noStatIncrease) {
+        Log.push("card_effect_no_stat_up", {
+          effectId: card.effect && card.effect.id,
+          chance: statMod.noStatIncreaseChance,
+          before: { trust: deltas.trustDelta, stress: deltas.stressDelta },
+          after: { trust: trustApplied, stress: stressApplied },
+        });
+      }
       if (deltas.matched) {
         Log.push("value_resonance", {
           value: deltas.value,
           base: { trust: card.trustDelta || 0, stress: card.stressDelta || 0 },
-          applied: { trust: deltas.trustDelta, stress: deltas.stressDelta },
+          applied: { trust: trustApplied, stress: stressApplied },
         });
       }
-      if (deltas.stressDampened) {
+      if (deltas.stressDampened && !statMod.noStatIncrease) {
         Log.push("stress_dampened", {
           from: deltas.stressBeforeDamp,
           to: deltas.stressDelta,
@@ -806,6 +1014,7 @@
               return c.id;
             }),
             deceit: deceit,
+            cardEffect: card.effect || null,
           };
           Log.push("reveal_choice_open", {
             kind: kind,
@@ -827,6 +1036,12 @@
         }
       }
 
+      // 카드 특수 효과: 본 해금과 별도로 발동 (키워드 선택 대기 중에는 선택 확정 후)
+      let bonusReveals = [];
+      if (!needChoose && card.effect) {
+        bonusReveals = CardEffect.apply(s, card.effect, s.rng);
+      }
+
       // 키워드 선택은 획득한 해금이므로, 선택 대기 중에는 강제 판결을 미룸
       let broken = false;
       let timeOut = false;
@@ -844,6 +1059,7 @@
         needChoose: needChoose,
         choices: choices,
         failBurst: failBurst,
+        bonusReveals: bonusReveals,
         deceit: deceit,
         failStreakFact: s.failStreakFact,
         failStreakEmotion: s.failStreakEmotion,
@@ -854,8 +1070,9 @@
         hand: s.hand.slice(),
         valueMatch: deltas.matched,
         value: deltas.value,
-        appliedDeltas: { trust: deltas.trustDelta, stress: deltas.stressDelta },
-        stressDampened: !!deltas.stressDampened,
+        appliedDeltas: { trust: trustApplied, stress: stressApplied },
+        stressDampened: !!deltas.stressDampened && !statMod.noStatIncrease,
+        noStatIncrease: !!statMod.noStatIncrease,
       };
       s.lastResult = result;
       return result;
@@ -887,6 +1104,9 @@
       if (pending.choiceIds.indexOf(infoId) < 0) return { ok: false, reason: "bad_choice" };
 
       const reveal = Events.revealById(s, pending.kind, infoId, { deceit: !!pending.deceit });
+      const bonusReveals = pending.cardEffect
+        ? CardEffect.apply(s, pending.cardEffect, s.rng)
+        : [];
       s.pendingReveal = null;
       Log.push("reveal_choice_confirm", {
         infoId: infoId,
@@ -901,6 +1121,7 @@
       const result = {
         ok: !!reveal.ok,
         reveal: reveal,
+        bonusReveals: bonusReveals,
         deceit: !!pending.deceit,
         soulBroken: broken,
         timeExpired: timeOut || s.timeExpired,
@@ -1013,12 +1234,24 @@
         trustDelta: deltas.trustDelta,
         stressDelta: deltas.stressDelta,
         stressDampened: !!deltas.stressDampened,
+        noStatIncreaseChance:
+          card.effect && card.effect.noStatIncrease
+            ? card.effect.noStatIncrease.chance || 0
+            : 0,
       };
     },
 
     cardDeltas(card) {
       if (!card) return null;
       return Values.resolveDeltas(this.state, card);
+    },
+
+    describeCardEffect(card) {
+      return CardEffect.describe(card && card.effect);
+    },
+
+    hasCardEffect(card) {
+      return CardEffect.hasAny(card && card.effect);
     },
 
     stressDampenFrom() {

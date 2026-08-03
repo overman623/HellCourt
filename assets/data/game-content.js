@@ -14,7 +14,7 @@
           id: "deceased_01",
           trueName: "한소라",
           anonymousLabel: "이름 불명",
-          courtName: "ㅁㅁ법정",
+          courtName: "공정의 법정",
           intro: "익명의 망자가 법정에 섰다. 최초로 열린 인생사건부터, 사실과 감정을 심문하라.",
           profileNote: "판결 전까지는 신원이 가려진 망자. 희생과 다짐의 흔적이 짙다.",
           // 임시: 가치관 사실 키워드 2개 (질서/도전/관계/경쟁/정의/쾌락)
@@ -204,7 +204,7 @@
           id: "deceased_02",
           trueName: "강세훈",
           anonymousLabel: "이름 불명",
-          courtName: "ㅁㅁ법정",
+          courtName: "공정의 법정",
           intro: "또 다른 망자가 법정에 섰다. 이번에는 손익과 침묵의 흔적부터 심문하라.",
           profileNote: "판결 전까지는 신원이 가려진 망자. 타인의 대가를 밟고 올라선 흔적이 짙다.",
           values: ["경쟁", "쾌락"],
@@ -393,7 +393,7 @@
           id: "deceased_03",
           trueName: "정하윤",
           anonymousLabel: "이름 불명",
-          courtName: "ㅁㅁ법정",
+          courtName: "공정의 법정",
           intro: "세 번째 망자가 법정에 섰다. 보호와 방조가 겹친 흔적부터 심문하라.",
           profileNote: "판결 전까지는 신원이 가려진 망자. 사랑으로 감싼 선택이, 다른 목숨을 스치게 했다.",
           values: ["관계", "질서"],
@@ -633,6 +633,7 @@
     ],
 
     questionCards: [
+      // 특수효과 15장: 사실해금 5 / 감정해금 5 / 스탯 5
       {
         id: "qc_f01",
         text: "그날의 일정을 처음부터 말하십시오.",
@@ -640,7 +641,8 @@
         value: "질서",
         trustDelta: 1,
         stressDelta: 0,
-        desc: "시간 순서 확인. 신뢰↑",
+        desc: "시간 순서 확인. 신뢰↑ · 효과: 사실 1개 추가 해금",
+        effect: { id: "bonus_fact", randomReveal: "FACT", count: 1 },
       },
       {
         id: "qc_f02",
@@ -658,7 +660,8 @@
         value: "관계",
         trustDelta: 1,
         stressDelta: -2,
-        desc: "책임의 시작점. 신뢰↑, 스트레스↓↓",
+        desc: "책임의 시작점. 신뢰↑, 스트레스↓↓ · 효과: 감정 1개 추가 해금",
+        effect: { id: "bonus_emotion", randomReveal: "EMOTION", count: 1 },
       },
       {
         id: "qc_f04",
@@ -667,7 +670,8 @@
         value: "경쟁",
         trustDelta: -1,
         stressDelta: 2,
-        desc: "모순 추궁. 신뢰↓, 스트레스↑↑",
+        desc: "모순 추궁. 신뢰↓, 스트레스↑↑ · 효과: 40% 스탯 상승 무효",
+        effect: { id: "soften_probe", noStatIncrease: { chance: 0.4 } },
       },
       {
         id: "qc_f05",
@@ -676,7 +680,8 @@
         value: "정의",
         trustDelta: 0,
         stressDelta: 1,
-        desc: "물증 추적. 스트레스↑",
+        desc: "물증 추적. 스트레스↑ · 효과: 사실 1개 추가 해금",
+        effect: { id: "bonus_fact", randomReveal: "FACT", count: 1 },
       },
       {
         id: "qc_f06",
@@ -685,7 +690,8 @@
         value: "질서",
         trustDelta: 1,
         stressDelta: 0,
-        desc: "알리바이 확인. 신뢰↑",
+        desc: "알리바이 확인. 신뢰↑ · 효과: 신원 사실 해금",
+        effect: { id: "reveal_identity", revealTarget: "identity" },
       },
       {
         id: "qc_f07",
@@ -703,7 +709,8 @@
         value: "도전",
         trustDelta: 1,
         stressDelta: -2,
-        desc: "행동 연쇄. 신뢰↑, 스트레스↓↓",
+        desc: "행동 연쇄. 신뢰↑, 스트레스↓↓ · 효과: 사실 1개 추가 해금",
+        effect: { id: "bonus_fact", randomReveal: "FACT", count: 1 },
       },
       {
         id: "qc_f09",
@@ -712,7 +719,8 @@
         value: "경쟁",
         trustDelta: -1,
         stressDelta: 2,
-        desc: "은폐 추궁. 신뢰↓, 스트레스↑↑",
+        desc: "은폐 추궁. 신뢰↓, 스트레스↑↑ · 효과: 50% 스탯 상승 무효",
+        effect: { id: "soften_cover", noStatIncrease: { chance: 0.5 } },
       },
       {
         id: "qc_f10",
@@ -748,7 +756,8 @@
         value: "정의",
         trustDelta: -1,
         stressDelta: 2,
-        desc: "모순 대조. 신뢰↓, 스트레스↑↑",
+        desc: "모순 대조. 신뢰↓, 스트레스↑↑ · 효과: 사실 1개 추가 해금",
+        effect: { id: "bonus_fact", randomReveal: "FACT", count: 1 },
       },
       {
         id: "qc_f14",
@@ -802,7 +811,8 @@
         value: "도전",
         trustDelta: 1,
         stressDelta: -3,
-        desc: "완화 감정. 신뢰↑, 스트레스↓↓↓",
+        desc: "완화 감정. 신뢰↑, 스트레스↓↓↓ · 효과: 감정 1개 추가 해금",
+        effect: { id: "bonus_emotion", randomReveal: "EMOTION", count: 1 },
       },
       {
         id: "qc_e05",
@@ -811,7 +821,8 @@
         value: "도전",
         trustDelta: 0,
         stressDelta: 3,
-        desc: "고위험 심문. 스트레스↑↑↑",
+        desc: "고위험 심문. 스트레스↑↑↑ · 효과: 45% 스탯 상승 무효",
+        effect: { id: "soften_risk", noStatIncrease: { chance: 0.45 } },
       },
       {
         id: "qc_e06",
@@ -829,7 +840,8 @@
         value: "경쟁",
         trustDelta: -1,
         stressDelta: 2,
-        desc: "배신감 추궁. 신뢰↓, 스트레스↑↑",
+        desc: "배신감 추궁. 신뢰↓, 스트레스↑↑ · 효과: 감정 1개 추가 해금",
+        effect: { id: "bonus_emotion", randomReveal: "EMOTION", count: 1 },
       },
       {
         id: "qc_e08",
@@ -838,7 +850,8 @@
         value: "정의",
         trustDelta: 1,
         stressDelta: 2,
-        desc: "사과 억제. 신뢰↑, 스트레스↑↑",
+        desc: "사과 억제. 신뢰↑, 스트레스↑↑ · 효과: 사건 연결 감정 해금",
+        effect: { id: "reveal_link", revealTarget: "eventLink" },
       },
       {
         id: "qc_e09",
@@ -856,7 +869,8 @@
         value: "쾌락",
         trustDelta: 0,
         stressDelta: 3,
-        desc: "잔상 압박. 스트레스↑↑↑",
+        desc: "잔상 압박. 스트레스↑↑↑ · 효과: 40% 스탯 상승 무효",
+        effect: { id: "soften_echo", noStatIncrease: { chance: 0.4 } },
       },
       {
         id: "qc_e11",
@@ -865,7 +879,8 @@
         value: "경쟁",
         trustDelta: 0,
         stressDelta: 1,
-        desc: "고립 감정. 스트레스↑",
+        desc: "고립 감정. 스트레스↑ · 효과: 감정 1개 추가 해금",
+        effect: { id: "bonus_emotion", randomReveal: "EMOTION", count: 1 },
       },
       {
         id: "qc_e12",
@@ -874,7 +889,8 @@
         value: "쾌락",
         trustDelta: -1,
         stressDelta: 2,
-        desc: "명분 추궁. 신뢰↓, 스트레스↑↑",
+        desc: "명분 추궁. 신뢰↓, 스트레스↑↑ · 효과: 35% 스탯 상승 무효",
+        effect: { id: "soften_excuse", noStatIncrease: { chance: 0.35 } },
       },
       {
         id: "qc_e13",

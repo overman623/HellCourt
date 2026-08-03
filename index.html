@@ -535,6 +535,12 @@
         letter-spacing: 0.04em;
       }
 
+      .card-effect-tag {
+        color: #c9b27a;
+        font-size: 0.85em;
+        letter-spacing: 0.04em;
+      }
+
       .badge {
         display: inline-block;
         margin-left: 0.35rem;
@@ -1402,7 +1408,7 @@
         <div class="ingame-layout">
           <aside class="panel left-panel" aria-label="법정 상태">
             <div class="court-nav">
-              <div class="court-name" id="courtName">ㅁㅁ법정</div>
+              <div class="court-name" id="courtName">공정의 법정</div>
             </div>
 
             <div class="gauge-block hidden" id="courtTimeBlock">
@@ -1759,6 +1765,35 @@
           renderRevealPick();
         }
 
+        function formatBonusLines(bonusReveals) {
+          if (!bonusReveals || !bonusReveals.length) return "";
+          if (!ui.freshKeywords) ui.freshKeywords = {};
+          const lines = [];
+          bonusReveals.forEach(function (r) {
+            if (!r || !r.ok || !r.info) return;
+            if (r.info.id) ui.freshKeywords[r.info.id] = true;
+            const kindLabel = r.kind === "FACT" ? "사실" : "감정";
+            const kw = r.info.keyword || kindLabel;
+            let line = "카드 효과 · " + kindLabel + " 「" + kw + "」 추가 해금";
+            if (r.nameRevealed) {
+              line += "\n정체가 드러났다: " + Game.state.displayName;
+            } else if (r.unlockedEventId) {
+              const unlockedId = r.unlockedEventId;
+              const nev = Game.state.events.find(function (e) {
+                return e.id === unlockedId;
+              });
+              line +=
+                "\n새로운 인생사건이 열렸다: " +
+                (nev ? nev.title : unlockedId) +
+                "\n사건 정보에서 선택해 조사하십시오.";
+              if (!ui.fx) ui.fx = {};
+              ui.fx.eventId = unlockedId;
+            }
+            lines.push(line);
+          });
+          return lines.join("\n");
+        }
+
         function applyFailBurst(burst, options) {
           options = options || {};
           if (!burst || !burst.ok) return;
@@ -1799,6 +1834,9 @@
             sub += "\n사건 정보에서 선택해 조사하십시오.";
           }
 
+          const bonusLines = formatBonusLines(options.bonusReveals);
+          if (bonusLines) sub += "\n" + bonusLines;
+
           ui.stageBackup = null;
           setStage(main, sub);
           pulseStage("unlock");
@@ -1834,11 +1872,30 @@
               (nev ? nev.title : unlockedId) +
               "\n사건 정보에서 선택해 조사하십시오.";
           }
+          const bonusLines = formatBonusLines(options.bonusReveals);
+          if (bonusLines) sub += "\n" + bonusLines;
           ui.stageBackup = null;
           setStage(main, sub);
           pulseStage("unlock");
           ui.tabIndex = 0;
           refreshIngame(options.refresh || {});
+        }
+
+        function applyBonusOnly(bonusReveals, options) {
+          options = options || {};
+          const lines = formatBonusLines(bonusReveals);
+          if (!lines) return false;
+          const first = bonusReveals[0];
+          ui.fx = {
+            keywordId: first && first.info ? first.info.id : null,
+            eventId: first && first.unlockedEventId ? first.unlockedEventId : null,
+          };
+          ui.stageBackup = null;
+          setStage("카드 효과 발동", lines);
+          pulseStage("unlock");
+          ui.tabIndex = 0;
+          refreshIngame(options.refresh || {});
+          return true;
         }
 
         function finishCardRound(forceEnd) {
@@ -1886,7 +1943,10 @@
             setInputLocked(false);
             return;
           }
-          applyRevealResult(result.reveal, { refresh: {} });
+          applyRevealResult(result.reveal, {
+            refresh: {},
+            bonusReveals: result.bonusReveals,
+          });
           pulseGauges();
           finishCardRound(!!(result.soulBroken || result.timeExpired));
         }
@@ -2017,7 +2077,7 @@
           const tMax = (b.trust && b.trust.max) || 10;
           const sMax = (b.stress && b.stress.max) || 10;
 
-          document.getElementById("courtName").textContent = s.courtName || "ㅁㅁ법정";
+          document.getElementById("courtName").textContent = "공정의 법정";
           document.getElementById("trustLabel").textContent = Game.labels().trust || "신뢰";
           document.getElementById("stressLabel").textContent = Game.labels().stress || "스트레스";
           document.getElementById("trustFill").style.width = (s.trust / tMax) * 100 + "%";
@@ -2452,7 +2512,8 @@
               deltaHtml(deltas.trustDelta) +
               " · 스트레스 " +
               deltaHtml(deltas.stressDelta) +
-              (deltas.matched ? ' <span class="value-boost">공명</span>' : "");
+              (deltas.matched ? ' <span class="value-boost">공명</span>' : "") +
+              (Game.hasCardEffect(card) ? ' <span class="card-effect-tag">효과</span>' : "");
             label.appendChild(title);
             label.appendChild(meta);
 
@@ -2495,6 +2556,10 @@
             );
           }
           if (card.desc) lines.push(card.desc);
+          const effectLines = Game.describeCardEffect(card) || [];
+          effectLines.forEach(function (line) {
+            lines.push(line);
+          });
           if (Game.isHighStress()) {
             lines.push("고스트레스 — 추가 압박은 +1로 제한");
           }
@@ -2508,6 +2573,11 @@
                 Math.round(risk.unlockP * 100) +
                 "%"
             );
+            if (risk.noStatIncreaseChance > 0) {
+              lines.push(
+                "스탯 상승 무효 확률 " + Math.round(risk.noStatIncreaseChance * 100) + "% (미리보기는 미적용)"
+              );
+            }
             if (risk.stressDampened) lines.push("이 카드의 스트레스 증가가 제한됩니다.");
             if (risk.soulRisk) lines.push("⚠ 사용 시 영혼 파괴 위험이 있습니다.");
           }
@@ -2745,6 +2815,9 @@
           if (result.valueMatch && result.value) {
             sub += " · 가치관 공명(" + result.value + ")";
           }
+          if (result.noStatIncrease) {
+            sub += " · 스탯 상승 무효";
+          }
           if (result.stressDampened) {
             sub += " · 스트레스 상승 제한";
           }
@@ -2765,13 +2838,25 @@
           }
 
           if (result.failBurst && result.failBurst.ok) {
-            applyFailBurst(result.failBurst, { refresh: { animateCards: true } });
+            applyFailBurst(result.failBurst, {
+              refresh: { animateCards: true },
+              bonusReveals: result.bonusReveals,
+            });
             finishCardRound(!!(result.soulBroken || result.timeExpired));
             return;
           }
 
           if (result.reveal && result.reveal.ok) {
-            applyRevealResult(result.reveal, { refresh: { animateCards: true } });
+            applyRevealResult(result.reveal, {
+              refresh: { animateCards: true },
+              bonusReveals: result.bonusReveals,
+            });
+            finishCardRound(!!(result.soulBroken || result.timeExpired));
+            return;
+          }
+
+          if (result.bonusReveals && result.bonusReveals.length) {
+            applyBonusOnly(result.bonusReveals, { refresh: { animateCards: true } });
             finishCardRound(!!(result.soulBroken || result.timeExpired));
             return;
           }
