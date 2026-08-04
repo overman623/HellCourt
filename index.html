@@ -8,17 +8,16 @@
     <style>
       :root {
         --bg: #050505;
-        --panel: #000;
+        --panel: rgba(0, 0, 0, 0.72);
         --text: #f2f2f2;
-        --muted: rgba(242, 242, 242, 0.4);
-        --line: #e8e8e8;
+        --muted: rgba(242, 242, 242, 0.45);
+        --line: rgba(232, 232, 232, 0.55);
         --accent: #c62828;
+        --spirit: #e8c56a;
+        --time: #d8d8d8;
+        --btn: #2a2a2a;
+        --btn-hover: #3a3a3a;
         --focus: #ffffff;
-        --trust: #3d7cff;
-        --stress: #9b5cff;
-        --btn-face: #2a2a2a;
-        --fact: #6db3ff;
-        --emotion: #d08cff;
       }
 
       @font-face {
@@ -28,1538 +27,359 @@
         font-display: swap;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        overflow: hidden;
-        background: var(--bg);
-        color: var(--text);
+      * { box-sizing: border-box; }
+      html, body {
+        width: 100%; height: 100%; margin: 0; overflow: hidden;
+        background: var(--bg); color: var(--text);
         font-family: "GameUI", "Malgun Gothic", sans-serif;
       }
-
-      button,
-      textarea {
-        font: inherit;
-        color: inherit;
-      }
-
-      button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-      }
-
-      .screen {
-        position: absolute;
-        inset: 0;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .screen.active {
-        display: flex;
-      }
-
+      button, textarea { font: inherit; color: inherit; }
+      button { background: none; border: none; cursor: pointer; padding: 0; }
       .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
       }
-
-      .hidden {
-        display: none !important;
+      .screen {
+        position: absolute; inset: 0; display: none;
+        flex-direction: column; align-items: center; justify-content: center;
       }
+      .screen.active { display: flex; }
 
       /* TITLE */
       #screen-title {
         justify-content: flex-end;
-        padding-bottom: clamp(4.5rem, 14vh, 8rem);
+        padding-bottom: clamp(4rem, 12vh, 7rem);
         background: var(--title-bg, #050505) center / cover no-repeat;
         image-rendering: pixelated;
-        animation: title-fade-in 1.1s ease-out both;
       }
-
-      @keyframes title-fade-in {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      .menu {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.65rem;
-        min-width: 14rem;
-        animation: menu-rise 0.9s ease-out 0.35s both;
-      }
-
-      @keyframes menu-rise {
-        from {
-          opacity: 0;
-          transform: translateY(12px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .menu-item {
-        position: relative;
-        padding: 0.2rem 1.6rem;
-        color: var(--muted);
-        font-size: clamp(1.05rem, 2.2vw, 1.35rem);
-        letter-spacing: 0.18em;
-        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.85);
-        cursor: pointer;
-        user-select: none;
-      }
-
-      .menu-item.selected {
-        color: var(--focus);
-        text-shadow:
-          0 0 12px rgba(198, 40, 40, 0.35),
-          0 2px 0 rgba(0, 0, 0, 0.9);
-      }
-
-      .menu-item.selected::before,
-      .menu-item.selected::after {
-        position: absolute;
-        top: 50%;
-        color: var(--accent);
-        font-size: 0.7em;
-        transform: translateY(-50%);
-        content: "◆";
-      }
-
-      .menu-item.selected::before {
-        left: 0;
-      }
-
-      .menu-item.selected::after {
-        right: 0;
-      }
-
-      .menu-hint {
-        position: absolute;
-        bottom: 1.25rem;
-        color: rgba(242, 242, 242, 0.28);
-        font-size: 0.75rem;
-        letter-spacing: 0.12em;
-      }
-
-      /* INGAME */
-      #screen-ingame {
-        align-items: stretch;
-        justify-content: stretch;
-        padding: clamp(10px, 1.6vw, 18px);
-        background: #000;
-      }
-
-      .ingame-layout {
-        flex: 1;
-        display: grid;
-        grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.35fr) minmax(220px, 1fr);
-        gap: clamp(10px, 1.2vw, 16px);
-        min-height: 0;
-        width: 100%;
-      }
-
-      .panel {
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        min-width: 0;
-      }
-
-      .box {
-        border: 2px solid var(--line);
-        background: var(--panel);
-      }
-
-      .court-nav {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.55rem;
-        margin-bottom: 0.55rem;
-      }
-
-      .court-nav .court-name {
-        flex: 1;
-        text-align: center;
-        border: 2px solid var(--line);
-        padding: 0.4rem 0.5rem;
-        letter-spacing: 0.12em;
-        font-size: 0.95rem;
-      }
-
-      .gauge-block {
-        margin-bottom: 0.55rem;
-      }
-
-      .gauge-track {
-        display: flex;
-        gap: 3px;
-        border: 2px solid var(--line);
-        padding: 5px 6px;
-        margin-bottom: 0.25rem;
-      }
-
-      .gauge-seg {
-        flex: 1;
-        height: 8px;
-        border-bottom: 2px solid rgba(232, 232, 232, 0.35);
-      }
-
-      .gauge-seg.on {
-        background: var(--line);
-        border-bottom-color: var(--line);
-      }
-
-      .gauge-seg.fx-seg-drop {
-        animation: seg-drop 0.55s ease-out;
-      }
-
-      @keyframes seg-drop {
-        0% {
-          background: var(--line);
-          border-bottom-color: var(--line);
-          opacity: 1;
-          transform: scaleY(1);
-        }
-        100% {
-          background: transparent;
-          border-bottom-color: rgba(232, 232, 232, 0.35);
-          opacity: 0.5;
-          transform: scaleY(0.35);
-        }
-      }
-
-      .gauge-meta {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.78rem;
-        letter-spacing: 0.08em;
-        padding: 0 0.1rem;
-      }
-
-      .status-guide {
-        width: 100%;
-        margin: 0.35rem 0 0.7rem;
-        padding: 0.85rem 0.7rem;
-        border: 2px solid var(--line);
-        border-radius: 10px;
-        background: var(--btn-face);
-        letter-spacing: 0.06em;
-        font-size: 0.88rem;
-        line-height: 1.45;
-        text-align: center;
-        color: rgba(242, 242, 242, 0.9);
-        min-height: 3.2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .status-guide.warn {
-        border-color: var(--accent);
-        color: #ffb4b4;
-      }
-
-      .status-guide .sub {
-        display: block;
-        margin-top: 0.25rem;
-        font-size: 0.72rem;
-        color: rgba(242, 242, 242, 0.5);
-        letter-spacing: 0.04em;
-      }
-
-      .stat-row {
-        display: grid;
-        grid-template-columns: 4rem 1fr 2.4rem;
-        align-items: center;
-        gap: 0.45rem;
-        margin-bottom: 0.4rem;
-        font-size: 0.82rem;
-        letter-spacing: 0.1em;
-      }
-
-      .stat-bar {
-        height: 14px;
-        border: 2px solid var(--line);
-        background: #111;
-        overflow: hidden;
-      }
-
-      .stat-bar > span {
-        display: block;
-        height: 100%;
-        width: 50%;
-        transition: width 0.45s ease-out;
-      }
-
-      .stat-bar.trust > span {
-        background: var(--trust);
-      }
-
-      .stat-bar.stress > span {
-        background: var(--stress);
-      }
-
-      .stat-val {
-        text-align: right;
-        font-size: 0.78rem;
-      }
-
-      .side-tabs {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 0.4rem;
-        margin: 0.55rem 0 0.65rem;
-      }
-
-      .side-tabs .tab-btn {
-        border: 2px solid var(--line);
-        border-radius: 999px;
-        padding: 0.35rem 0.2rem;
-        font-size: 0.72rem;
-        letter-spacing: 0.04em;
-        white-space: nowrap;
-        color: rgba(242, 242, 242, 0.45);
-      }
-
-      .side-tabs .tab-btn.active {
-        color: #fff;
-        background: #2a2a2a;
-        box-shadow: inset 0 0 0 1px #fff;
-      }
-
-      .side-tabs.focus-zone .tab-btn.active {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
-
-      .tab-panels {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        border: 2px solid var(--line);
-        padding: 0.45rem 0.4rem 0.35rem;
-      }
-
-      .tab-panel {
-        display: none;
-        flex: 1;
-        flex-direction: column;
-        min-height: 0;
-      }
-
-      .tab-panel.active {
-        display: flex;
-      }
-
-      .case-list-wrap {
-        flex: 1;
-        overflow: auto;
-        min-height: 0;
-      }
-
-      .case-inline-detail {
-        flex: 1.1;
-        min-height: 0;
-        margin-top: 0.45rem;
-        padding-top: 0.45rem;
-        border-top: 1px solid rgba(232, 232, 232, 0.35);
-        overflow: auto;
-        font-size: 0.74rem;
-        line-height: 1.45;
-        color: rgba(242, 242, 242, 0.8);
-      }
-
-      .case-inline-detail h4 {
-        margin: 0.35rem 0 0.2rem;
-        font-size: 0.72rem;
-        font-weight: 400;
-        letter-spacing: 0.08em;
-        color: rgba(242, 242, 242, 0.55);
-      }
-
-      .case-inline-detail .title {
-        margin: 0 0 0.25rem;
-        letter-spacing: 0.08em;
-        color: #fff;
-      }
-
-      .ach-item {
-        margin: 0.35rem 0;
-        padding: 0.35rem 0.4rem;
-        border: 1px solid rgba(232, 232, 232, 0.25);
-      }
-
-      .ach-item.locked {
-        opacity: 0.35;
-      }
-
-      .ach-item .ach-title {
-        letter-spacing: 0.08em;
-      }
-
-      .ach-item .ach-desc {
-        margin-top: 0.15rem;
-        font-size: 0.7rem;
-        color: rgba(242, 242, 242, 0.55);
-      }
-
-      .case-list,
-      .panel-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-
-      .case-item {
-        display: grid;
-        grid-template-columns: 1.1rem 1fr;
-        gap: 0.25rem;
-        align-items: start;
-        padding: 0.2rem 0.15rem;
-        font-size: 0.78rem;
-        letter-spacing: 0.04em;
-        color: rgba(242, 242, 242, 0.75);
-        cursor: pointer;
-        user-select: none;
-      }
-
-      .case-item .cursor {
-        color: transparent;
-        line-height: 1.2;
-      }
-
-      .case-item.selected {
-        color: #fff;
-      }
-
-      .case-item.selected .cursor {
-        color: #fff;
-      }
-
-      .case-item.locked {
-        color: rgba(242, 242, 242, 0.35);
-        cursor: default;
-        pointer-events: none;
-      }
-
-      .case-item:not(.locked) {
-        cursor: pointer;
-      }
-
-      .case-item .note {
-        display: block;
-        margin-top: 0.15rem;
-        font-size: 0.68rem;
-        color: rgba(242, 242, 242, 0.45);
-      }
-
-      .panel-body {
-        flex: 1;
-        overflow: auto;
-        min-height: 0;
-        font-size: 0.78rem;
-        letter-spacing: 0.04em;
-        line-height: 1.55;
-        color: rgba(242, 242, 242, 0.85);
-        padding: 0.25rem 0.15rem;
-      }
-
-      .panel-body h3 {
-        margin: 0 0 0.45rem;
-        font-size: 0.9rem;
-        font-weight: 400;
-        letter-spacing: 0.1em;
-      }
-
-      .panel-body h4 {
-        margin: 0.7rem 0 0.3rem;
-        font-size: 0.78rem;
-        font-weight: 400;
-        color: rgba(242, 242, 242, 0.7);
-      }
-
-      .info-line {
-        margin: 0.2rem 0;
-      }
-
-      .info-line.hidden-info {
-        color: rgba(242, 242, 242, 0.35);
-      }
-
-      .value-kw {
-        color: var(--fact);
-        letter-spacing: 0.04em;
-      }
-
-      .value-kw.matched {
-        color: #f0d78c;
-      }
-
-      .value-boost {
-        color: #f0d78c;
-        font-size: 0.85em;
-        letter-spacing: 0.04em;
-      }
-
-      .card-effect-tag {
-        color: #c9b27a;
-        font-size: 0.85em;
-        letter-spacing: 0.04em;
-      }
-
-      .badge {
-        display: inline-block;
-        margin-left: 0.35rem;
-        font-size: 0.65rem;
-        letter-spacing: 0.04em;
-        opacity: 0.8;
-      }
-
-      .list-hint {
-        margin-top: 0.35rem;
-        text-align: right;
-        font-size: 0.68rem;
-        letter-spacing: 0.08em;
-        color: rgba(242, 242, 242, 0.55);
-      }
-
-      .stage-panel .box {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        padding: 0.6rem 0.75rem 0.85rem;
-        text-align: center;
-        min-height: 0;
-        background: #000;
-        overflow: hidden;
-      }
-
-      .stage-visual {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-      }
-
-      .stage-art {
-        width: min(100%, 280px);
-        height: auto;
-        max-height: 62%;
-        object-fit: contain;
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-        animation: stage-bob 2.8s ease-in-out infinite;
-        user-select: none;
-        pointer-events: none;
-      }
-
-      @keyframes stage-bob {
-        0%,
-        100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-4px);
-        }
-      }
-
-      .stage-speech {
-        position: absolute;
-        top: 2%;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2;
-        width: min(92%, 22em);
-        padding: 0.55rem 0.7rem 0.65rem;
-        background: #000;
-        border: 2px solid #fff;
-        box-shadow:
-          0 0 0 1px #000,
-          inset 0 0 0 1px #000;
-        text-align: center;
-      }
-
-      .stage-speech::after {
-        content: "";
-        position: absolute;
-        left: 50%;
-        bottom: -7px;
-        width: 10px;
-        height: 10px;
-        background: #000;
-        border-right: 2px solid #fff;
-        border-bottom: 2px solid #fff;
-        transform: translateX(-50%) rotate(45deg);
-      }
-
-      .stage-speech.is-empty {
-        opacity: 0.55;
-      }
-
-      .stage-line {
-        margin: 0;
-        max-width: none;
-        font-size: clamp(0.78rem, 1.35vw, 0.98rem);
-        letter-spacing: 0.06em;
-        line-height: 1.45;
-        color: #f2f2f2;
-        word-break: keep-all;
-      }
-
-      .stage-line.sub {
-        margin-top: 0.35rem;
-        color: rgba(242, 242, 242, 0.62);
-        font-size: clamp(0.7rem, 1.15vw, 0.85rem);
-        white-space: pre-line;
-      }
-
-      .stage-line.sub:empty {
-        display: none;
-      }
-
-      #stageBox.fx-stage {
-        animation: stage-react 0.55s ease-out;
-      }
-
-      #stageBox.fx-stage-unlock {
-        animation: stage-unlock 0.7s ease-out;
-      }
-
-      #stageBox.fx-stage-fail {
-        animation: stage-fail 0.45s ease-out;
-      }
-
-      @keyframes stage-react {
-        0% {
-          transform: scale(1);
-          box-shadow: inset 0 0 0 rgba(255, 255, 255, 0);
-        }
-        35% {
-          transform: scale(1.015);
-          box-shadow: inset 0 0 28px rgba(232, 232, 232, 0.12);
-        }
-        100% {
-          transform: scale(1);
-          box-shadow: inset 0 0 0 rgba(255, 255, 255, 0);
-        }
-      }
-
-      @keyframes stage-unlock {
-        0% {
-          transform: scale(1);
-          box-shadow: inset 0 0 0 rgba(198, 40, 40, 0);
-        }
-        40% {
-          transform: scale(1.02);
-          box-shadow: inset 0 0 36px rgba(198, 40, 40, 0.28);
-        }
-        100% {
-          transform: scale(1);
-          box-shadow: inset 0 0 0 rgba(198, 40, 40, 0);
-        }
-      }
-
-      @keyframes stage-fail {
-        0%,
-        100% {
-          transform: translateX(0);
-          filter: brightness(1);
-        }
-        25% {
-          transform: translateX(-3px);
-          filter: brightness(0.85);
-        }
-        50% {
-          transform: translateX(3px);
-          filter: brightness(0.9);
-        }
-        75% {
-          transform: translateX(-2px);
-        }
-      }
-
-      .gauge-block.fx-gauge .gauge-fill {
-        animation: gauge-pulse 0.5s ease-out;
-      }
-
-      .stat-bar.fx-gauge > span {
-        animation: gauge-pulse 0.5s ease-out;
-      }
-
-      @keyframes gauge-pulse {
-        0% {
-          filter: brightness(1);
-        }
-        40% {
-          filter: brightness(1.45);
-        }
-        100% {
-          filter: brightness(1);
-        }
-      }
-
-      .cards-body.fx-cards {
-        animation: cards-shell 0.45s ease-out;
-      }
-
-      @keyframes cards-shell {
-        0% {
-          outline-color: rgba(198, 40, 40, 0);
-        }
-        40% {
-          outline: 1px solid rgba(232, 200, 120, 0.65);
-          outline-offset: 4px;
-        }
-        100% {
-          outline-color: rgba(198, 40, 40, 0);
-        }
-      }
-
-      .q-card.fx-card-in {
-        animation: card-in 0.4s ease-out both;
-      }
-
-      @keyframes card-in {
-        from {
-          opacity: 0;
-          transform: translateY(8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .case-item.fx-unlock {
-        animation: unlock-flash 0.85s ease-out;
-      }
-
-      .case-item.fresh-unlock {
-        color: #7dcea0;
-      }
-
-      .case-item.fresh-unlock.selected {
-        color: #a8e6c1;
-      }
-
-      @keyframes unlock-flash {
-        0% {
-          background: rgba(198, 40, 40, 0);
-          color: inherit;
-        }
-        35% {
-          background: rgba(198, 40, 40, 0.35);
-          color: #fff;
-        }
-        100% {
-          background: rgba(198, 40, 40, 0);
-        }
-      }
-
-      .cards-head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        margin-bottom: 0.55rem;
-        letter-spacing: 0.1em;
-      }
-
-      .cards-head h2 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 400;
-      }
-
-      .cards-remain {
-        font-size: 0.85rem;
-      }
-
-      .cards-body {
-        flex: 1;
-        min-height: 0;
-        margin-bottom: 0.55rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.55rem;
-        padding: 0.15rem 0;
-        overflow: auto;
-        image-rendering: pixelated;
-      }
-
-      .cards-body.focus-zone {
-        outline: 1px solid rgba(198, 40, 40, 0.45);
-        outline-offset: 4px;
-      }
-
-      .q-card {
-        display: grid;
-        grid-template-columns: clamp(40px, 12%, 52px) 1fr;
-        gap: 0.45rem;
-        align-items: stretch;
-        cursor: pointer;
-        user-select: none;
-        flex-shrink: 0;
-      }
-
-      .q-card-icon {
-        aspect-ratio: 1;
-        border: 2px solid #e8e8e8;
-        border-radius: 6px;
-        background: #000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.55rem;
-        letter-spacing: 0.04em;
-        color: #aaa;
-      }
-
-      .q-card-icon.FACT {
-        color: var(--fact);
-        border-color: var(--fact);
-      }
-
-      .q-card-icon.EMOTION {
-        color: var(--emotion);
-        border-color: var(--emotion);
-      }
-
-      .q-card-label {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 0.15rem;
-        min-height: clamp(40px, 12%, 52px);
-        padding: 0.35rem 0.75rem;
-        border: 2px solid #e8e8e8;
-        border-radius: 8px;
-        background: linear-gradient(180deg, #7a7a7a 0%, #5c5c5c 55%, #4a4a4a 100%);
-        box-shadow:
-          inset 1px 1px 0 rgba(255, 255, 255, 0.35),
-          inset -2px -2px 0 rgba(0, 0, 0, 0.45);
-        font-size: clamp(0.72rem, 1.2vw, 0.9rem);
-        letter-spacing: 0.04em;
-        color: #fff;
-        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
-      }
-
-      .q-card-meta {
-        font-size: 0.65rem;
-        opacity: 0.85;
-        letter-spacing: 0.06em;
-      }
-
-      .q-card-meta .delta-up {
-        color: #e8a0a0;
-      }
-
-      .q-card-meta .delta-down {
-        color: #8fd4c8;
-        font-weight: 700;
-      }
-
-      .q-card-meta .delta-zero {
-        opacity: 0.7;
-      }
-
-      .q-card.selected .q-card-icon,
-      .q-card.selected .q-card-label {
-        box-shadow:
-          0 0 0 2px var(--accent),
-          inset 1px 1px 0 rgba(255, 255, 255, 0.4),
-          inset -2px -2px 0 rgba(0, 0, 0, 0.45);
-      }
-
-      .q-card.disabled {
-        opacity: 0.35;
-        pointer-events: none;
-      }
-
-      .cards-foot {
-        flex: 0 0 42%;
-        min-height: 36%;
-        display: flex;
-        flex-direction: column;
-        border: 2px solid var(--line);
-        padding: 0.85rem;
-      }
-
-      .cards-fail {
-        flex: 0 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        margin: 0.45rem 0;
-        padding: 0.45rem 0.55rem;
-        border: 1px solid rgba(232, 232, 232, 0.28);
-        letter-spacing: 0.06em;
-      }
-
-      .fail-meter {
-        display: grid;
-        grid-template-columns: 4.5rem 1fr auto;
-        align-items: center;
-        gap: 0.45rem;
-        font-size: 0.72rem;
-        color: rgba(242, 242, 242, 0.7);
-      }
-
-      .fail-meter.fact .fail-meter-label {
-        color: var(--fact);
-      }
-
-      .fail-meter.emotion .fail-meter-label {
-        color: var(--emotion);
+      .title-menu { display: flex; flex-direction: column; gap: 0.85rem; align-items: center; }
+      .title-item {
+        min-width: 14rem; padding: 0.65rem 1.4rem;
+        border: 2px solid transparent; letter-spacing: 0.12em;
+        background: rgba(0,0,0,0.45);
       }
+      .title-item.selected { border-color: var(--focus); }
 
-      .fail-meter-pips {
-        display: flex;
-        gap: 0.3rem;
+      /* LOBBY */
+      #screen-lobby {
+        background: radial-gradient(ellipse at center, #1a1210 0%, #050505 70%);
+        padding: 2rem;
       }
-
-      .fail-pip {
-        width: 0.7rem;
-        height: 0.7rem;
-        border: 1px solid rgba(242, 242, 242, 0.35);
-        background: transparent;
-      }
-
-      .fail-pip.filled.fact {
-        background: var(--fact);
-        border-color: var(--fact);
-      }
-
-      .fail-pip.filled.emotion {
-        background: var(--emotion);
-        border-color: var(--emotion);
-      }
-
-      .fail-meter.warn {
-        color: #f0d78c;
-      }
-
-      .fail-meter-count {
-        font-variant-numeric: tabular-nums;
-        opacity: 0.85;
-      }
-
-      .cards-foot p {
-        flex: 1;
-        margin: 0 0 0.55rem;
-        font-size: 0.9rem;
-        letter-spacing: 0.04em;
-        line-height: 1.55;
-        color: rgba(242, 242, 242, 0.85);
-        white-space: pre-wrap;
-      }
-
-      .cards-foot .select-hint {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.35rem;
-        font-size: 0.72rem;
-        letter-spacing: 0.06em;
-        color: rgba(242, 242, 242, 0.65);
-      }
-
-      .keycap {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 1.35rem;
-        height: 1.1rem;
-        padding: 0 0.2rem;
+      .lobby-card {
+        width: min(720px, 92vw);
         border: 1px solid var(--line);
-        border-radius: 2px;
-        font-size: 0.65rem;
+        background: var(--panel);
+        padding: 1.5rem 1.75rem;
+      }
+      .lobby-card h1 {
+        margin: 0 0 0.35rem; font-size: 1.6rem; letter-spacing: 0.08em;
+      }
+      .lobby-meta { color: var(--muted); margin-bottom: 1.25rem; font-size: 0.95rem; }
+      .lobby-summary {
+        min-height: 8rem; border: 1px solid rgba(255,255,255,0.12);
+        padding: 1rem; margin-bottom: 1.25rem; white-space: pre-wrap; line-height: 1.55;
+        color: rgba(242,242,242,0.88);
+      }
+      .lobby-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+      .lobby-btn {
+        padding: 0.7rem 1.2rem; border: 1px solid var(--line);
+        background: var(--btn); letter-spacing: 0.06em;
+      }
+      .lobby-btn.primary { border-color: var(--spirit); color: var(--spirit); }
+      .lobby-btn.selected, .lobby-btn:hover { background: var(--btn-hover); }
+      .lobby-btn:disabled { opacity: 0.4; cursor: default; }
+
+      /* INGAME — Figma-inspired 3-column */
+      #screen-ingame {
+        align-items: stretch; justify-content: stretch;
+        background: var(--ingame-bg, #0a0a0a) center / cover no-repeat;
+      }
+      .trial-shell {
+        flex: 1; display: grid;
+        grid-template-columns: minmax(280px, 34%) minmax(240px, 32%) minmax(260px, 34%);
+        gap: 0.75rem; padding: 1rem 1.1rem 0.85rem;
+        max-width: 1600px; width: 100%; margin: 0 auto;
+      }
+      .col {
+        display: flex; flex-direction: column; gap: 0.55rem; min-height: 0;
+      }
+      .panel-box {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        padding: 0.7rem 0.85rem;
+      }
+      .court-title {
+        font-size: 1.35rem; letter-spacing: 0.1em; text-align: center;
+        padding: 0.55rem 0.4rem;
+      }
+      .hud-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+      .hud-label { min-width: 4.2rem; color: var(--muted); font-size: 0.9rem; }
+      .seg-track {
+        flex: 1; display: flex; gap: 4px; align-items: center;
+      }
+      .seg {
+        flex: 1; height: 10px; background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      .seg.on { background: var(--time); border-color: #fff; }
+      .spirit-track {
+        flex: 1; height: 14px; background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(232,197,106,0.35); position: relative;
+      }
+      .spirit-fill {
+        height: 100%; width: 50%; background: linear-gradient(90deg, #a8842e, var(--spirit));
+      }
+      .hud-value { min-width: 3.2rem; text-align: right; font-size: 0.9rem; }
+      .guide-line {
+        text-align: center; color: rgba(242,242,242,0.8);
+        padding: 0.45rem; letter-spacing: 0.04em;
       }
 
-      .warn {
-        color: #ff8a80;
+      .tabs { display: flex; gap: 0.35rem; position: relative; z-index: 2; }
+      .tab {
+        flex: 1; padding: 0.55rem 0.3rem; border: 1px solid var(--line);
+        background: rgba(20,20,20,0.85); font-size: 0.9rem; letter-spacing: 0.04em;
+        cursor: pointer; pointer-events: auto;
       }
+      .tab:hover { background: #2a2a2a; }
+      .tab.active { border-color: #fff; background: #222; }
+      .tab:focus-visible { outline: 1px solid #fff; outline-offset: 2px; }
+
+      .list-box {
+        flex: 1; min-height: 220px; overflow: auto;
+        border: 1px solid var(--line); background: rgba(0,0,0,0.55);
+        padding: 0.4rem 0.2rem;
+      }
+      .event-row, .menu-row, .detail-line {
+        display: flex; align-items: flex-start; gap: 0.45rem;
+        padding: 0.45rem 0.65rem; cursor: pointer;
+      }
+      .event-row.selected, .menu-row.selected {
+        outline: 1px solid #fff; background: rgba(255,255,255,0.06);
+      }
+      .cursor { width: 1rem; color: var(--spirit); flex-shrink: 0; }
+      .event-title { line-height: 1.35; }
+      .event-meta { color: var(--muted); font-size: 0.78rem; margin-top: 0.15rem; }
+      .detail-body { padding: 0.75rem; line-height: 1.55; white-space: pre-wrap; }
+      .hint-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        color: var(--muted); font-size: 0.8rem; padding: 0.15rem 0.25rem;
+      }
+
+      .stage-col { min-height: 0; }
+      .top-chips {
+        display: flex; justify-content: space-between; gap: 0.5rem;
+        color: var(--muted); font-size: 0.85rem; padding: 0.2rem 0.15rem;
+      }
+      .stage-frame {
+        flex: 1; border: 1px solid var(--line); background: rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; min-height: 420px;
+        background-image: var(--stage-art, none);
+        background-position: center top; background-size: cover; background-repeat: no-repeat;
+      }
+      .stage-speech {
+        margin-top: auto; padding: 1rem 1.1rem 1.15rem;
+        background: linear-gradient(transparent, rgba(0,0,0,0.88) 28%);
+        white-space: pre-wrap; line-height: 1.55; min-height: 7rem;
+      }
+      .stage-speech .sub { color: var(--muted); margin-top: 0.45rem; font-size: 0.92rem; }
+
+      .action-stack { display: flex; flex-direction: column; gap: 0.55rem; }
+      .action-btn {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.75rem 0.9rem; border: 1px solid var(--line);
+        background: rgba(25,25,25,0.9); text-align: left;
+      }
+      .action-btn .icon {
+        width: 48px; height: 48px; border: 1px solid var(--line);
+        display: grid; place-items: center; flex-shrink: 0;
+        background: #111; font-size: 0.75rem; color: var(--muted);
+      }
+      .action-btn.selected { border-color: #fff; }
+      .action-btn:disabled { opacity: 0.35; cursor: default; }
+      .action-btn .cost { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; }
+      .desc-box {
+        flex: 1; min-height: 140px; border: 1px solid var(--line);
+        background: rgba(0,0,0,0.55); padding: 0.85rem; line-height: 1.5;
+        color: rgba(242,242,242,0.85); white-space: pre-wrap;
+      }
+      .right-hint { color: var(--muted); font-size: 0.8rem; text-align: right; }
 
       /* VERDICT */
-      #screen-verdict {
-        background: #050505;
-        align-items: stretch;
-        justify-content: stretch;
-        padding: clamp(16px, 3vw, 36px);
+      #screen-verdict { background: #080808; padding: 2rem; }
+      .verdict-card {
+        width: min(560px, 92vw); border: 1px solid var(--line);
+        background: var(--panel); padding: 1.5rem;
       }
-
-      .verdict-layout {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1.4fr 1fr;
-        gap: 1rem;
-        min-height: 0;
-        width: min(1100px, 100%);
-        margin: 0 auto;
-      }
-
-      .verdict-review {
-        border: 2px solid var(--line);
-        padding: 1rem;
-        overflow: auto;
-      }
-
-      .verdict-review h2 {
-        margin: 0 0 0.75rem;
-        font-size: 1.1rem;
-        font-weight: 400;
-        letter-spacing: 0.12em;
-      }
-
-      .verdict-review h3 {
-        margin: 0.9rem 0 0.35rem;
-        font-size: 0.9rem;
-        font-weight: 400;
-      }
-
-      .verdict-review p,
-      .verdict-review li {
-        font-size: 0.82rem;
-        line-height: 1.5;
-        color: rgba(242, 242, 242, 0.8);
-      }
-
-      .verdict-actions {
-        border: 2px solid var(--line);
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .verdict-actions h2 {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 400;
-        letter-spacing: 0.12em;
-      }
-
-      .verdict-choice-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.6rem;
-      }
-
+      .verdict-card h2 { margin: 0 0 0.75rem; letter-spacing: 0.08em; }
+      .verdict-warn { color: #e8a0a0; margin-bottom: 0.85rem; line-height: 1.4; }
+      .verdict-choices { display: flex; gap: 0.75rem; margin-bottom: 0.85rem; }
       .verdict-choice {
-        border: 2px solid var(--line);
-        padding: 0.9rem;
-        letter-spacing: 0.14em;
-        background: #1a1a1a;
+        flex: 1; padding: 0.9rem; border: 1px solid var(--line); background: var(--btn);
       }
-
-      .verdict-choice.selected {
-        background: #2a2a2a;
+      .verdict-choice.selected { border-color: #fff; }
+      .verdict-choice.hell.selected { border-color: var(--accent); color: #ffb4b4; }
+      .verdict-choice.heaven.selected { border-color: #8ec8ff; color: #b8dcff; }
+      #verdictReason {
+        width: 100%; min-height: 5rem; resize: vertical;
+        background: #111; border: 1px solid var(--line); padding: 0.65rem;
       }
-
-      .verdict-choice.nav-focus,
-      .verdict-actions .submit-row button.selected {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
+      .verdict-submit {
+        margin-top: 0.85rem; width: 100%; padding: 0.75rem;
+        border: 1px solid var(--line); background: var(--btn);
       }
+      .verdict-submit.selected { border-color: #fff; }
 
-      .verdict-actions .submit-row button.selected {
-        background: #333;
-      }
-
-      .verdict-actions textarea {
-        flex: 1;
-        min-height: 140px;
-        resize: none;
-        background: #0a0a0a;
-        border: 2px solid var(--line);
-        padding: 0.75rem;
-        letter-spacing: 0.04em;
-        line-height: 1.45;
-      }
-
-      .verdict-actions textarea:focus {
-        outline: 2px solid rgba(232, 232, 232, 0.45);
-        outline-offset: 2px;
-      }
-
-      .verdict-actions .submit-row {
-        display: flex;
-        gap: 0.5rem;
-      }
-
-      .verdict-actions .submit-row button {
-        flex: 1;
-        border: 2px solid var(--line);
-        padding: 0.75rem;
-        background: #222;
-        letter-spacing: 0.1em;
-      }
-
-      .verdict-nav-hint {
-        margin: 0;
-        font-size: 0.72rem;
-        letter-spacing: 0.06em;
-        color: rgba(242, 242, 242, 0.45);
-        text-align: right;
-      }
-
-      /* SETTINGS / END */
-      #screen-settings {
-        background: #050505;
-      }
-
+      /* END — 판결 결과 + 메뉴 */
       #screen-end {
         justify-content: flex-end;
-        padding-bottom: clamp(3.5rem, 12vh, 7rem);
+        align-items: center;
         background: #050505 center / cover no-repeat;
-        image-rendering: pixelated;
-        animation: title-fade-in 0.9s ease-out both;
+        padding-bottom: clamp(3rem, 10vh, 5.5rem);
       }
-
-      #screen-end.guilty {
-        background-image: var(--verdict-guilty, none);
+      .end-overlay {
+        background: rgba(0,0,0,0.55); padding: 1.5rem 2rem;
+        border: 1px solid var(--line); text-align: center;
+        min-width: min(360px, 88vw);
       }
-
-      #screen-end.innocent {
-        background-image: var(--verdict-innocent, none);
-      }
-
-      .settings-panel {
-        text-align: center;
-        max-width: 28rem;
-      }
-
-      .settings-panel h1 {
-        margin: 0 0 1rem;
-        font-size: 1.5rem;
-        font-weight: 400;
-        letter-spacing: 0.1em;
-      }
-
-      .settings-panel p {
-        margin: 0 0 1rem;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
       .end-menu {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.7rem;
-        min-width: 14rem;
-        animation: menu-rise 0.8s ease-out 0.25s both;
+        display: flex; flex-direction: column; gap: 0.65rem;
+        margin-top: 1.25rem; align-items: stretch;
       }
-
       .end-menu-item {
-        position: relative;
-        padding: 0.25rem 1.8rem;
-        color: var(--muted);
-        font-size: clamp(1rem, 2vw, 1.25rem);
-        letter-spacing: 0.14em;
-        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.9);
-        cursor: pointer;
-        user-select: none;
+        padding: 0.7rem 1.2rem; border: 2px solid transparent;
+        background: rgba(0,0,0,0.45); letter-spacing: 0.08em;
       }
+      .end-menu-item.selected,
+      .end-menu-item:hover { border-color: var(--focus); background: rgba(30,30,30,0.85); }
 
-      .end-menu-item.selected {
-        color: var(--focus);
-        text-shadow:
-          0 0 12px rgba(198, 40, 40, 0.35),
-          0 2px 0 rgba(0, 0, 0, 0.9);
+      #toast {
+        position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
+        background: rgba(0,0,0,0.85); border: 1px solid var(--line);
+        padding: 0.65rem 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        z-index: 50; max-width: 90vw;
       }
+      #toast.show { opacity: 1; }
 
-      .end-menu-item.selected::before,
-      .end-menu-item.selected::after {
-        position: absolute;
-        top: 50%;
-        color: var(--accent);
-        font-size: 0.7em;
-        transform: translateY(-50%);
-        content: "◆";
-      }
-
-      .end-menu-item.selected::before {
-        left: 0;
-      }
-
-      .end-menu-item.selected::after {
-        right: 0;
-      }
-
-      .end-log-btn {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        border: 1px solid rgba(232, 232, 232, 0.35);
-        padding: 0.35rem 0.55rem;
-        font-size: 0.7rem;
-        letter-spacing: 0.06em;
-        color: rgba(242, 242, 242, 0.45);
-      }
-
-      .end-log-btn:hover {
-        color: #fff;
-        border-color: #fff;
-      }
-
-      .end-karma {
-        margin: 0 0 0.85rem;
-        text-align: center;
-        color: rgba(220, 160, 120, 0.85);
-        font-size: clamp(0.85rem, 1.6vw, 1rem);
-        letter-spacing: 0.12em;
-        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.9);
-        animation: menu-rise 0.8s ease-out 0.1s both;
-      }
-
-      .end-karma[hidden] {
-        display: none;
-      }
-
-      .game-toast {
-        position: fixed;
-        left: 50%;
-        top: 42%;
-        transform: translate(-50%, -50%) scale(0.96);
-        z-index: 40;
-        min-width: min(18rem, 80vw);
-        padding: 1.1rem 1.4rem;
-        border: 2px solid rgba(232, 232, 232, 0.55);
-        background: rgba(8, 8, 8, 0.92);
-        text-align: center;
-        letter-spacing: 0.12em;
-        opacity: 0;
-        pointer-events: none;
-        transition:
-          opacity 0.22s ease,
-          transform 0.22s ease;
-      }
-
-      .game-toast.show {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
-
-      .game-toast-title {
-        margin: 0;
-        font-size: clamp(1rem, 2.2vw, 1.25rem);
-        color: #f2f2f2;
-      }
-
-      .game-toast-sub {
-        margin: 0.45rem 0 0;
-        font-size: 0.85rem;
-        color: rgba(242, 242, 242, 0.6);
-      }
-
-      .reveal-pick {
-        position: fixed;
-        left: 50%;
-        top: 42%;
-        transform: translate(-50%, -50%);
-        z-index: 45;
-        min-width: min(22rem, 86vw);
-        max-width: 92vw;
-        padding: 1.15rem 1.35rem 1rem;
-        border: 2px solid rgba(232, 232, 232, 0.55);
-        background: rgba(8, 8, 8, 0.94);
-        letter-spacing: 0.08em;
-        pointer-events: auto;
-      }
-
-      .reveal-pick[hidden] {
-        display: none;
-      }
-
-      .reveal-pick-title {
-        margin: 0 0 0.35rem;
-        text-align: center;
-        font-size: clamp(1rem, 2.2vw, 1.2rem);
-        color: #f2f2f2;
-      }
-
-      .reveal-pick-sub {
-        margin: 0 0 0.75rem;
-        text-align: center;
-        font-size: 0.82rem;
-        color: rgba(242, 242, 242, 0.55);
-      }
-
-      .reveal-pick-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-
-      .reveal-pick-item {
-        display: flex;
-        align-items: center;
-        gap: 0.45rem;
-        padding: 0.55rem 0.65rem;
-        border: 1px solid rgba(232, 232, 232, 0.25);
-        color: rgba(242, 242, 242, 0.88);
-        cursor: pointer;
-        background: transparent;
-      }
-
-      .reveal-pick-item .cursor {
-        opacity: 0;
-        color: var(--accent);
-      }
-
-      .reveal-pick-item.selected {
-        border-color: rgba(242, 242, 242, 0.75);
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      .reveal-pick-item.selected .cursor {
-        opacity: 1;
-      }
-
-      .reveal-pick-hint {
-        margin: 0.75rem 0 0;
-        text-align: center;
-        font-size: 0.8rem;
-        color: rgba(242, 242, 242, 0.45);
-      }
-
-      #screen-ingame.input-locked {
-        pointer-events: none;
-      }
-
-      #screen-ingame.input-locked .reveal-pick {
-        pointer-events: auto;
-      }
-
-      .back-hint {
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
-
-      @media (max-width: 900px) {
-        .ingame-layout,
-        .verdict-layout {
+      @media (max-width: 980px) {
+        .trial-shell {
           grid-template-columns: 1fr;
           overflow: auto;
         }
+        .stage-frame { min-height: 280px; }
       }
     </style>
   </head>
   <body>
-    <main id="app">
-      <section id="screen-title" class="screen active" aria-label="타이틀">
-        <h1 class="sr-only">지옥법정</h1>
-        <ul id="titleMenu" class="menu" role="menu" aria-label="메인 메뉴">
-          <li class="menu-item selected" role="menuitem" data-action="start">심판 시작</li>
-          <li class="menu-item" role="menuitem" data-action="settings">설정</li>
-          <li class="menu-item" role="menuitem" data-action="quit">종료</li>
-        </ul>
-        <p class="menu-hint">↑↓ 이동 · Enter 선택</p>
-      </section>
+    <h1 class="sr-only">지옥법정</h1>
 
-      <section id="screen-ingame" class="screen" aria-label="인게임">
-        <div class="ingame-layout">
-          <aside class="panel left-panel" aria-label="법정 상태">
-            <div class="court-nav">
-              <div class="court-name" id="courtName">공정의 법정</div>
-            </div>
+    <section id="screen-title" class="screen active" aria-label="타이틀">
+      <nav class="title-menu" id="titleMenu" aria-label="타이틀 메뉴"></nav>
+    </section>
 
-            <div class="gauge-block hidden" id="courtTimeBlock">
-              <div class="gauge-track" id="courtTimeTrack"></div>
-              <div class="gauge-meta">
-                <span>법정시간</span>
-                <span id="courtTimeText">—</span>
-              </div>
-            </div>
+    <section id="screen-lobby" class="screen" aria-label="로비">
+      <div class="lobby-card">
+        <h1>공정의 법정 · 로비</h1>
+        <div class="lobby-meta" id="lobbyMeta"></div>
+        <div class="lobby-summary" id="lobbySummary">아직 판결 기록이 없습니다.</div>
+        <div class="lobby-actions" id="lobbyActions"></div>
+      </div>
+    </section>
 
-            <div class="status-guide" id="statusGuide" aria-live="polite">
-              재판 시작
+    <section id="screen-ingame" class="screen" aria-label="재판">
+      <div class="trial-shell">
+        <div class="col left-col">
+          <div class="panel-box court-title" id="courtName">공정의 법정</div>
+          <div class="panel-box">
+            <div class="hud-row">
+              <span class="hud-label">법정시간</span>
+              <div class="seg-track" id="timeSegs"></div>
+              <span class="hud-value" id="timeValue">8:00 / 8:00</span>
             </div>
-
-            <div class="stat-row">
-              <span id="trustLabel">신뢰</span>
-              <div class="stat-bar trust"><span id="trustFill"></span></div>
-              <span class="stat-val" id="trustText">5/10</span>
+            <div class="hud-row">
+              <span class="hud-label">영 력</span>
+              <div class="spirit-track"><div class="spirit-fill" id="spiritFill"></div></div>
+              <span class="hud-value" id="spiritValue">10/10</span>
             </div>
-            <div class="stat-row">
-              <span id="stressLabel">스트레스</span>
-              <div class="stat-bar stress"><span id="stressFill"></span></div>
-              <span class="stat-val" id="stressText">5/10</span>
-            </div>
-
-            <div class="side-tabs" id="sideTabs" role="tablist" aria-label="좌측 탭">
-              <button type="button" class="tab-btn active" role="tab" data-tab="cases" aria-selected="true">사건 정보</button>
-              <button type="button" class="tab-btn" role="tab" data-tab="detail" aria-selected="false">상세정보</button>
-              <button type="button" class="tab-btn" role="tab" data-tab="menu" aria-selected="false">메뉴</button>
-            </div>
-
-            <div class="tab-panels">
-              <div class="tab-panel active" id="panel-cases" role="tabpanel" data-tab="cases">
-                <div class="case-list-wrap">
-                  <ul class="case-list" id="caseList" role="listbox" aria-label="인생사건"></ul>
-                </div>
-                <div class="case-inline-detail" id="caseInlineDetail"></div>
-                <div class="list-hint">←→ 탭 · ▲▼ 인생사건 · Enter 키워드 · 키워드↑↓ 미리보기</div>
-              </div>
-
-              <div class="tab-panel" id="panel-detail" role="tabpanel" data-tab="detail" hidden>
-                <div class="panel-body" id="detailBody"></div>
-                <div class="list-hint">←→ 탭</div>
-              </div>
-
-              <div class="tab-panel" id="panel-menu" role="tabpanel" data-tab="menu" hidden>
-                <ul class="panel-list" id="ingameMenuList" role="listbox" aria-label="인게임 메뉴"></ul>
-                <div class="list-hint">←→ 탭 · ▲▼ · Enter</div>
-              </div>
-            </div>
-          </aside>
-
-          <section class="panel stage-panel" aria-label="재판 무대">
-            <div class="box" id="stageBox">
-              <div class="stage-visual">
-                <div class="stage-speech" id="stageSpeech">
-                  <p class="stage-line" id="stageText">심문을 시작하십시오.</p>
-                  <p class="stage-line sub" id="stageSubtext"></p>
-                </div>
-                <img
-                  class="stage-art"
-                  id="stageArt"
-                  src="assets/images/ui/StageSoul.png"
-                  alt=""
-                  draggable="false"
-                />
-              </div>
-            </div>
-          </section>
-
-          <aside class="panel right-panel" aria-label="질문 카드">
-            <div class="cards-head">
-              <h2>질문 카드</h2>
-              <span class="cards-remain" id="cardsRemain">손패 0 / 전체 0</span>
-            </div>
-            <div class="cards-body" id="cardsBody"></div>
-            <div class="cards-fail" id="cardsFail" aria-label="해금 실패 누적">
-              <div class="fail-meter fact" id="failMeterFact">
-                <span class="fail-meter-label">사실 실패</span>
-                <span class="fail-meter-pips" id="failPipsFact"></span>
-                <span class="fail-meter-count" id="failCountFact">0/2</span>
-              </div>
-              <div class="fail-meter emotion" id="failMeterEmotion">
-                <span class="fail-meter-label">감정 실패</span>
-                <span class="fail-meter-pips" id="failPipsEmotion"></span>
-                <span class="fail-meter-count" id="failCountEmotion">0/2</span>
-              </div>
-            </div>
-            <div class="cards-foot">
-              <p id="cardsHint">인생사건을 선택한 뒤 질문 카드를 사용하십시오.</p>
-              <div class="select-hint">
-                <span>사용</span>
-                <span class="keycap">␣</span>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section id="screen-verdict" class="screen" aria-label="판결">
-        <div class="verdict-layout">
-          <div class="verdict-review" id="verdictReview"></div>
-          <div class="verdict-actions">
-            <h2>판결</h2>
-            <p id="verdictNotice" class="warn" hidden></p>
-            <div class="verdict-choice-row">
-              <button type="button" class="verdict-choice selected" data-choice="guilty" id="choiceGuilty">유죄</button>
-              <button type="button" class="verdict-choice" data-choice="innocent" id="choiceInnocent">무죄</button>
-            </div>
-            <label class="sr-only" for="verdictReason">판결 이유 (선택)</label>
-            <textarea id="verdictReason" placeholder="판결 이유 작성 (선택)"></textarea>
-            <div class="submit-row">
-              <button type="button" id="verdictSubmit">판결 확정</button>
-              <button type="button" id="verdictBack">심문으로</button>
-            </div>
-            <p class="verdict-nav-hint">↑↓ 이동 · ←→ 선택 · Enter 확정</p>
+          </div>
+          <div class="panel-box guide-line" id="statusGuide">재판 시작</div>
+          <div class="tabs" id="leftTabs">
+            <button type="button" class="tab active" data-tab="events">사건 정보</button>
+            <button type="button" class="tab" data-tab="detail">상세정보</button>
+            <button type="button" class="tab" data-tab="menu">메뉴</button>
+          </div>
+          <div class="list-box" id="leftList"></div>
+          <div class="hint-bar">
+            <span id="leftHint">SELECT</span>
+            <span>←→ 탭 · ↑↓ · Enter</span>
           </div>
         </div>
-      </section>
 
-      <section id="screen-end" class="screen" aria-label="판결 결과">
-        <h1 class="sr-only" id="endTitle">판결 결과</h1>
-        <button type="button" class="end-log-btn" id="downloadLogBtn">로그 저장</button>
-        <p id="endKarma" class="end-karma" hidden></p>
-        <ul id="endMenu" class="end-menu" role="menu" aria-label="판결 후 메뉴">
-          <li class="end-menu-item selected" role="menuitem" data-action="next">다음 재판하기</li>
-          <li class="end-menu-item" role="menuitem" data-action="title">심판종료</li>
-        </ul>
-        <p class="menu-hint">↑↓ 이동 · Enter 선택</p>
-      </section>
-
-      <section id="screen-settings" class="screen" aria-label="설정">
-        <div class="settings-panel">
-          <h1>설정</h1>
-          <p>시스템 토글은 <code>assets/data/game-config.js</code>에서 조정합니다.</p>
-          <p class="back-hint">Esc · 타이틀로</p>
+        <div class="col stage-col">
+          <div class="top-chips">
+            <span id="chipStone">환생석 : 1개 · 영기 0</span>
+            <span id="chipDays">환생문: 100일 · Day 1</span>
+          </div>
+          <div class="stage-frame" id="stageFrame">
+            <div class="stage-speech" id="stageSpeech">
+              <div id="stageMain">망자가 법정에 섰다.</div>
+              <div class="sub" id="stageSub"></div>
+            </div>
+          </div>
         </div>
-      </section>
 
-      <div id="gameToast" class="game-toast" hidden aria-live="assertive">
-        <p class="game-toast-title" id="gameToastTitle"></p>
-        <p class="game-toast-sub" id="gameToastSub"></p>
+        <div class="col right-col">
+          <div class="top-chips" style="justify-content:flex-end">
+            <span>재판 도구 선택</span>
+          </div>
+          <div class="action-stack">
+            <button type="button" class="action-btn" id="btnFact">
+              <span class="icon">FACT</span>
+              <span>
+                <strong id="lblFact">사실 조사하기</strong>
+                <span class="cost" id="costFact">법정시간 -30분</span>
+              </span>
+            </button>
+            <button type="button" class="action-btn" id="btnEmotion">
+              <span class="icon">EMO</span>
+              <span>
+                <strong id="lblEmotion">감정 들여다 보기</strong>
+                <span class="cost" id="costEmotion">법정시간 -60분 · 영력 -2</span>
+              </span>
+            </button>
+          </div>
+          <div class="desc-box" id="descBox">사건을 선택하고 사실과 감정을 조사하십시오.</div>
+          <div class="right-hint">SELECT (Space)</div>
+        </div>
       </div>
+    </section>
 
-      <div id="revealPick" class="reveal-pick" hidden role="dialog" aria-labelledby="revealPickTitle">
-        <p class="reveal-pick-title" id="revealPickTitle">공개할 키워드</p>
-        <p class="reveal-pick-sub" id="revealPickSub">해금에 성공했습니다. 공개할 단서를 고르십시오.</p>
-        <ul id="revealPickList" class="reveal-pick-list" role="listbox"></ul>
-        <p class="reveal-pick-hint">↑↓ 이동 · Enter 확정</p>
+    <section id="screen-verdict" class="screen" aria-label="판결">
+      <div class="verdict-card">
+        <h2>판결</h2>
+        <div class="verdict-warn" id="verdictWarn" hidden></div>
+        <div class="verdict-choices">
+          <button type="button" class="verdict-choice hell" data-choice="hell">지옥</button>
+          <button type="button" class="verdict-choice heaven" data-choice="heaven">천국</button>
+        </div>
+        <label class="sr-only" for="verdictReason">판결 이유</label>
+        <textarea id="verdictReason" placeholder="판결 이유를 적을 수 있습니다 (선택)"></textarea>
+        <button type="button" class="verdict-submit" id="verdictSubmit">판결 확정</button>
       </div>
-    </main>
+    </section>
+
+    <section id="screen-end" class="screen" aria-label="판결 결과">
+      <div class="end-overlay">
+        <div id="endTitle" style="font-size:1.6rem;letter-spacing:0.1em;margin-bottom:0.5rem"></div>
+        <div id="endSub" style="color:var(--muted)"></div>
+        <nav class="end-menu" id="endMenu" aria-label="판결 후 메뉴">
+          <button type="button" class="end-menu-item selected" data-end="next">다음 재판하기</button>
+          <button type="button" class="end-menu-item" data-end="title">심판종료</button>
+        </nav>
+      </div>
+    </section>
+
+    <div id="toast" role="status"></div>
 
     <script src="assets/data/game-config.js"></script>
     <script src="assets/data/game-content.js"></script>
@@ -1567,1932 +387,809 @@
     <script>
       (function () {
         const Game = window.HellCourtGame;
-        const TABS = ["cases", "detail", "menu"];
-        const SCREENS = {
-          title: document.getElementById("screen-title"),
-          ingame: document.getElementById("screen-ingame"),
-          verdict: document.getElementById("screen-verdict"),
-          end: document.getElementById("screen-end"),
-          settings: document.getElementById("screen-settings"),
-        };
-
-        const titleMenuItems = Array.from(document.querySelectorAll("#titleMenu .menu-item"));
-        const tabButtons = Array.from(document.querySelectorAll("#sideTabs .tab-btn"));
-        const ingameMenuDefs = [
-          { id: "verdict", label: "판결하기" },
-          { id: "resume", label: "계속 심문" },
-          { id: "bgm", label: "BGM" },
-          { id: "title", label: "타이틀로" },
-        ];
-
-        let ui = {
+        const ui = {
           screen: "title",
           titleIndex: 0,
-          tabIndex: 0,
-          focusZone: "tabs", // tabs | panel | keywords | cards
-          eventIndex: 0,
-          keywordIndex: 0,
-          cardIndex: 0,
-          menuIndex: 0,
-          verdictChoice: "guilty",
-          verdictFocus: "choice",
+          tab: "events",
+          listIndex: 0,
+          actionIndex: 0,
+          focus: "list", // list | actions
+          lobbyIndex: 0,
+          verdictIndex: 0,
           endIndex: 0,
-          stageBackup: null,
-          fx: null,
-          freshKeywords: {},
           busy: false,
-          prevCourtTime: null,
-          animateCardsOnce: false,
-          revealPick: null, // { choices, index, kind }
         };
 
-        const endMenuItems = Array.from(document.querySelectorAll("#endMenu .end-menu-item"));
-
-        function artPaths() {
-          return (window.GAME_CONTENT && window.GAME_CONTENT.art && window.GAME_CONTENT.art.paths) || {};
-        }
-
-        function applyArt() {
-          const art = artPaths();
-          const root = document.documentElement;
-          if (art.titleBg) root.style.setProperty("--title-bg", 'url("' + art.titleBg + '")');
-          if (art.ingameBg) root.style.setProperty("--ingame-bg", 'url("' + art.ingameBg + '")');
-          if (art.verdictGuilty) root.style.setProperty("--verdict-guilty", 'url("' + art.verdictGuilty + '")');
-          if (art.verdictInnocent) root.style.setProperty("--verdict-innocent", 'url("' + art.verdictInnocent + '")');
-          const stageArt = document.getElementById("stageArt");
-          if (stageArt && art.stageSoul) stageArt.src = art.stageSoul;
-        }
-
-        function renderEndMenu() {
-          endMenuItems.forEach(function (el, i) {
-            el.classList.toggle("selected", i === ui.endIndex);
-          });
-        }
-
-        function showEndScreen(choice) {
-          const end = document.getElementById("screen-end");
-          end.classList.toggle("guilty", choice === "guilty");
-          end.classList.toggle("innocent", choice === "innocent");
-          document.getElementById("endTitle").textContent =
-            choice === "guilty" ? "유죄가 선고되었습니다." : "무죄가 선고되었습니다.";
-          const karmaEl = document.getElementById("endKarma");
-          const karma =
-            (Game.state && Game.state.verdict && Game.state.verdict.karma) ||
-            (Game.karmaPreview && Game.karmaPreview());
-          if (karma && karma.rushed) {
-            karmaEl.hidden = false;
-            karmaEl.textContent =
-              (Game.labels() && Game.labels().karmaEnd) || "업보 — 알아보지도 않고 판결하였다.";
-          } else {
-            karmaEl.hidden = true;
-            karmaEl.textContent = "";
-          }
-          ui.endIndex = 0;
-          renderEndMenu();
-          showScreen("end");
-          BGM.playTrack(choice === "guilty" ? "hell" : "heaven");
-        }
-
-        function confirmEndMenu() {
-          const action = endMenuItems[ui.endIndex] && endMenuItems[ui.endIndex].dataset.action;
-          if (action === "next") {
-            enterIngame({ nextCase: true });
-          } else if (action === "title") {
-            BGM.stop();
-            showScreen("title");
-            renderTitleMenu();
-          }
-        }
-
-        function showScreen(name) {
-          ui.screen = name;
-          Object.keys(SCREENS).forEach(function (key) {
-            SCREENS[key].classList.toggle("active", key === name);
-          });
-        }
-
-        function setStage(text, sub) {
-          const main = text || "";
-          const secondary = sub || "";
-          document.getElementById("stageText").textContent = main;
-          document.getElementById("stageSubtext").textContent = secondary;
-          const speech = document.getElementById("stageSpeech");
-          if (speech) speech.classList.toggle("is-empty", !main && !secondary);
-        }
-
-        function replayAnim(el, className, ms) {
-          if (!el || !className) return;
-          el.classList.remove(className);
-          void el.offsetWidth;
-          el.classList.add(className);
-          const key = "_fx_" + className;
-          clearTimeout(el[key]);
-          el[key] = setTimeout(function () {
-            el.classList.remove(className);
-          }, ms || 650);
-        }
-
-        function pulseStage(kind) {
-          const box = document.getElementById("stageBox");
-          const cls =
-            kind === "unlock" ? "fx-stage-unlock" : kind === "fail" ? "fx-stage-fail" : "fx-stage";
-          replayAnim(box, cls, kind === "unlock" ? 750 : 550);
-        }
-
-        function pulseGauges() {
-          const trustBar = document.getElementById("trustFill") && document.getElementById("trustFill").parentElement;
-          const stressBar = document.getElementById("stressFill") && document.getElementById("stressFill").parentElement;
-          replayAnim(trustBar, "fx-gauge", 500);
-          replayAnim(stressBar, "fx-gauge", 500);
-        }
-
-        function setInputLocked(on) {
-          ui.busy = !!on;
-          const ingame = document.getElementById("screen-ingame");
-          if (ingame) ingame.classList.toggle("input-locked", !!on);
-        }
-
-        function hideRevealPick() {
-          ui.revealPick = null;
-          const el = document.getElementById("revealPick");
-          if (el) el.hidden = true;
-        }
-
-        function renderRevealPick() {
-          const pick = ui.revealPick;
-          const list = document.getElementById("revealPickList");
-          const el = document.getElementById("revealPick");
-          if (!pick || !list || !el) return;
-          const kindLabel = pick.kind === "FACT" ? "사실" : "감정";
-          document.getElementById("revealPickSub").textContent =
-            "해금 성공 · " + kindLabel + " 키워드 중 공개할 단서를 고르십시오.";
-          list.innerHTML = "";
-          pick.choices.forEach(function (c, i) {
-            const li = document.createElement("li");
-            li.className = "reveal-pick-item" + (i === pick.index ? " selected" : "");
-            li.setAttribute("role", "option");
-            li.setAttribute("aria-selected", i === pick.index ? "true" : "false");
-            li.innerHTML =
-              '<span class="cursor">▶</span><span>[' +
-              kindLabel +
-              "] ??? <span class=\"note\">(" +
-              (i + 1) +
-              "/" +
-              pick.choices.length +
-              ")</span></span>";
-            li.addEventListener("click", function () {
-              pick.index = i;
-              playUiSelect();
-              renderRevealPick();
-              confirmRevealPick();
-            });
-            list.appendChild(li);
-          });
-          el.hidden = false;
-        }
-
-        function openRevealPick(choices, kind) {
-          ui.revealPick = {
-            choices: choices.slice(),
-            index: 0,
-            kind: kind,
-          };
-          setInputLocked(true);
-          setStage("해금 성공", "공개할 키워드를 선택하십시오.");
-          pulseStage("unlock");
-          ui.tabIndex = 0;
-          refreshIngame({ animateCards: true });
-          renderRevealPick();
-        }
-
-        function formatBonusLines(bonusReveals) {
-          if (!bonusReveals || !bonusReveals.length) return "";
-          if (!ui.freshKeywords) ui.freshKeywords = {};
-          const lines = [];
-          bonusReveals.forEach(function (r) {
-            if (!r || !r.ok || !r.info) return;
-            if (r.info.id) ui.freshKeywords[r.info.id] = true;
-            const kindLabel = r.kind === "FACT" ? "사실" : "감정";
-            const kw = r.info.keyword || kindLabel;
-            let line = "카드 효과 · " + kindLabel + " 「" + kw + "」 추가 해금";
-            if (r.nameRevealed) {
-              line += "\n정체가 드러났다: " + Game.state.displayName;
-            } else if (r.unlockedEventId) {
-              const unlockedId = r.unlockedEventId;
-              const nev = Game.state.events.find(function (e) {
-                return e.id === unlockedId;
-              });
-              line +=
-                "\n새로운 인생사건이 열렸다: " +
-                (nev ? nev.title : unlockedId) +
-                "\n사건 정보에서 선택해 조사하십시오.";
-              if (!ui.fx) ui.fx = {};
-              ui.fx.eventId = unlockedId;
-            }
-            lines.push(line);
-          });
-          return lines.join("\n");
-        }
-
-        function applyFailBurst(burst, options) {
-          options = options || {};
-          if (!burst || !burst.ok) return;
-          const labels = Game.labels() || {};
-          const kindLabel = burst.kind === "FACT" ? "사실" : "감정";
-          const main =
-            burst.kind === "FACT"
-              ? labels.failCollapseFact || "같은 추궁이 두 번 막히자, 망자의 사실이 통째로 무너졌다."
-              : labels.failCollapseEmotion || "같은 추궁이 두 번 막히자, 망자의 감정이 통째로 무너졌다.";
-
-          let sub = kindLabel + " 키워드 " + burst.count + "개 일괄 공개";
-          if (!ui.freshKeywords) ui.freshKeywords = {};
-          (burst.reveals || []).forEach(function (r) {
-            if (r.info && r.info.id) ui.freshKeywords[r.info.id] = true;
-          });
-
-          const unlockedIds = burst.unlockedEventIds || [];
-          ui.fx = {
-            keywordId: burst.reveals && burst.reveals[0] && burst.reveals[0].info
-              ? burst.reveals[0].info.id
-              : null,
-            eventId: unlockedIds[0] || null,
-          };
-
-          if (burst.nameRevealed) {
-            sub += "\n정체가 드러났다: " + Game.state.displayName;
-          }
-          if (unlockedIds.length) {
-            const titles = unlockedIds
-              .map(function (id) {
-                const nev = Game.state.events.find(function (e) {
-                  return e.id === id;
-                });
-                return nev ? nev.title : id;
-              })
-              .join(", ");
-            sub += "\n새로운 인생사건이 열렸다: " + titles;
-            sub += "\n사건 정보에서 선택해 조사하십시오.";
-          }
-
-          const bonusLines = formatBonusLines(options.bonusReveals);
-          if (bonusLines) sub += "\n" + bonusLines;
-
-          ui.stageBackup = null;
-          setStage(main, sub);
-          pulseStage("unlock");
-          ui.tabIndex = 0;
-          refreshIngame(options.refresh || {});
-        }
-
-        function applyRevealResult(reveal, options) {
-          options = options || {};
-          if (!reveal || !reveal.ok) return;
-          const info = reveal.info;
-          const kw = info.keyword || (reveal.kind === "FACT" ? "사실" : "감정");
-          let main = "키워드 해금 · " + kw;
-          let sub = info.text || "";
-          ui.fx = {
-            keywordId: info.id || null,
-            eventId: reveal.unlockedEventId || null,
-          };
-          if (info.id) {
-            if (!ui.freshKeywords) ui.freshKeywords = {};
-            ui.freshKeywords[info.id] = true;
-          }
-          if (reveal.nameRevealed) {
-            sub = info.text + "\n정체가 드러났다: " + Game.state.displayName;
-          } else if (reveal.unlockedEventId) {
-            const unlockedId = reveal.unlockedEventId;
-            const nev = Game.state.events.find(function (e) {
-              return e.id === unlockedId;
-            });
-            sub =
-              info.text +
-              "\n새로운 인생사건이 열렸다: " +
-              (nev ? nev.title : unlockedId) +
-              "\n사건 정보에서 선택해 조사하십시오.";
-          }
-          const bonusLines = formatBonusLines(options.bonusReveals);
-          if (bonusLines) sub += "\n" + bonusLines;
-          ui.stageBackup = null;
-          setStage(main, sub);
-          pulseStage("unlock");
-          ui.tabIndex = 0;
-          refreshIngame(options.refresh || {});
-        }
-
-        function applyBonusOnly(bonusReveals, options) {
-          options = options || {};
-          const lines = formatBonusLines(bonusReveals);
-          if (!lines) return false;
-          const first = bonusReveals[0];
-          ui.fx = {
-            keywordId: first && first.info ? first.info.id : null,
-            eventId: first && first.unlockedEventId ? first.unlockedEventId : null,
-          };
-          ui.stageBackup = null;
-          setStage("카드 효과 발동", lines);
-          pulseStage("unlock");
-          ui.tabIndex = 0;
-          refreshIngame(options.refresh || {});
-          return true;
-        }
-
-        function finishCardRound(forceEnd) {
-          const waitMs = 980;
-          setTimeout(function () {
-            const s = Game.state;
-            if (!s) {
-              setInputLocked(false);
-              return;
-            }
-            const max = s.courtTimeMax || 10;
-            const title = forceEnd
-              ? s.soulBroken
-                ? "영혼 파괴"
-                : "법정시간 종료"
-              : "다음 법정시간";
-            const toastSub = forceEnd
-              ? s.soulBroken
-                ? "추가 심문이 불가합니다. 판결하십시오."
-                : "시간이 모두 소모되었습니다. 판결하십시오."
-              : "남은 시간 " + s.courtTime + "/" + max;
-
-            showGameToast(title, toastSub, function () {
-              setInputLocked(false);
-            });
-
-            if (forceEnd) {
-              setTimeout(function () {
-                openVerdict(true);
-              }, 500);
-            }
-          }, waitMs);
-        }
-
-        function confirmRevealPick() {
-          const pick = ui.revealPick;
-          if (!pick || !pick.choices.length) return;
-          const choice = pick.choices[pick.index];
-          if (!choice) return;
-          playUiConfirm();
-          hideRevealPick();
-          setInputLocked(true);
-          const result = Game.confirmReveal(choice.id);
-          if (!result.ok || !result.reveal) {
-            setInputLocked(false);
-            return;
-          }
-          applyRevealResult(result.reveal, {
-            refresh: {},
-            bonusReveals: result.bonusReveals,
-          });
-          pulseGauges();
-          finishCardRound(!!(result.soulBroken || result.timeExpired));
-        }
-
-        function showGameToast(title, sub, onShown) {
-          const el = document.getElementById("gameToast");
-          const titleEl = document.getElementById("gameToastTitle");
-          const subEl = document.getElementById("gameToastSub");
-          if (!el) {
-            if (onShown) onShown();
-            return;
-          }
-          titleEl.textContent = title || "";
-          subEl.textContent = sub || "";
-          el.hidden = false;
-          void el.offsetWidth;
-          el.classList.add("show");
-          if (onShown) onShown();
-          clearTimeout(ui._toastHide);
-          clearTimeout(ui._toastClear);
-          ui._toastHide = setTimeout(function () {
-            el.classList.remove("show");
-            ui._toastClear = setTimeout(function () {
-              el.hidden = true;
-            }, 220);
-          }, 1600);
-        }
-
-        function applyPendingFx() {
-          const fx = ui.fx;
-          if (!fx) return;
-          if (fx.keywordId) {
-            const kwLi = document.querySelector('#keywordList [data-info-id="' + fx.keywordId + '"]');
-            if (kwLi) replayAnim(kwLi, "fx-unlock", 900);
-          }
-          if (fx.eventId) {
-            const evLi = document.querySelector('#caseList [data-event-id="' + fx.eventId + '"]');
-            if (evLi) replayAnim(evLi, "fx-unlock", 900);
-          }
-          ui.fx = null;
-        }
-
-        function pushStageBackup() {
-          ui.stageBackup = {
-            text: document.getElementById("stageText").textContent,
-            sub: document.getElementById("stageSubtext").textContent,
-          };
-        }
-
-        function restoreStageBackup() {
-          if (!ui.stageBackup) return;
-          setStage(ui.stageBackup.text, ui.stageBackup.sub);
-          ui.stageBackup = null;
-        }
-
-        function getKeywordEntries(ev) {
-          if (!ev) return [];
-          const list = [];
-          (ev.facts || []).forEach(function (f) {
-            list.push({
-              kind: "FACT",
-              id: f.id,
-              keyword: f.keyword || "사실",
-              text: f.text,
-              revealed: !!f.revealed,
-            });
-          });
-          (ev.emotions || []).forEach(function (f) {
-            list.push({
-              kind: "EMOTION",
-              id: f.id,
-              keyword: f.keyword || "감정",
-              text: f.text,
-              revealed: !!f.revealed,
-            });
-          });
-          return list;
-        }
-
-        function previewKeywordOnStage() {
-          const ev = Game.getSelectedEvent();
-          const entries = getKeywordEntries(ev);
-          if (!entries.length) return;
-          ui.keywordIndex = Math.max(0, Math.min(ui.keywordIndex, entries.length - 1));
-          const item = entries[ui.keywordIndex];
-          if (!item) return;
-          if (item.revealed) {
-            setStage(
-              "[" + (item.kind === "FACT" ? "사실" : "감정") + "] " + item.keyword,
-              item.text
-            );
-          } else {
-            setStage(
-              "[" + (item.kind === "FACT" ? "사실" : "감정") + "] ???",
-              "아직 밝혀지지 않은 단서입니다."
-            );
-          }
-        }
-
-        function renderTitleMenu() {
-          titleMenuItems.forEach(function (el, i) {
-            el.classList.toggle("selected", i === ui.titleIndex);
-          });
-        }
-
-        function fillCourtTime(current, max) {
-          const track = document.getElementById("courtTimeTrack");
-          const prev = ui.prevCourtTime;
-          track.innerHTML = "";
-          const n = Math.max(1, max | 0);
-          for (let i = 0; i < n; i++) {
-            const seg = document.createElement("span");
-            const on = i < current;
-            seg.className = "gauge-seg" + (on ? " on" : "");
-            if (prev != null && current < prev && i === current) {
-              seg.classList.add("fx-seg-drop");
-            }
-            track.appendChild(seg);
-          }
-          document.getElementById("courtTimeText").textContent = current + "/" + max;
-          ui.prevCourtTime = current;
-        }
-
-        function renderHud() {
-          const s = Game.state;
-          if (!s) return;
-          const b = Game.config().balance || {};
-          const tMax = (b.trust && b.trust.max) || 10;
-          const sMax = (b.stress && b.stress.max) || 10;
-
-          document.getElementById("courtName").textContent = "공정의 법정";
-          document.getElementById("trustLabel").textContent = Game.labels().trust || "신뢰";
-          document.getElementById("stressLabel").textContent = Game.labels().stress || "스트레스";
-          document.getElementById("trustFill").style.width = (s.trust / tMax) * 100 + "%";
-          document.getElementById("stressFill").style.width = (s.stress / sMax) * 100 + "%";
-          document.getElementById("trustText").textContent = s.trust + "/" + tMax;
-          document.getElementById("stressText").textContent = s.stress + "/" + sMax;
-
-          const timeOn = Game.systemEnabled("courtTimeGauge");
-          document.getElementById("courtTimeBlock").classList.toggle("hidden", !timeOn);
-          if (timeOn) {
-            fillCourtTime(s.courtTime, s.courtTimeMax || 10);
-          }
-
-          const cardTotal = s.hand.length + s.deck.length + s.discard.length;
-          document.getElementById("cardsRemain").textContent =
-            "손패 " + s.hand.length + " / 전체 " + cardTotal;
-          renderFailMeters();
-          updateStatusGuide();
-        }
-
-        function renderFailMeters() {
-          const box = document.getElementById("cardsFail");
-          if (!box) return;
-          const on = Game.systemEnabled("failCollapse");
-          box.hidden = !on;
-          if (!on) return;
-
-          const streaks = Game.getFailStreaks();
-          const th = streaks.threshold || 2;
-
-          function fill(kind, count) {
-            const pips = document.getElementById(kind === "FACT" ? "failPipsFact" : "failPipsEmotion");
-            const countEl = document.getElementById(kind === "FACT" ? "failCountFact" : "failCountEmotion");
-            const meter = document.getElementById(kind === "FACT" ? "failMeterFact" : "failMeterEmotion");
-            if (!pips || !countEl || !meter) return;
-            pips.innerHTML = "";
-            for (let i = 0; i < th; i++) {
-              const pip = document.createElement("span");
-              pip.className =
-                "fail-pip" +
-                (i < count ? " filled " + (kind === "FACT" ? "fact" : "emotion") : "");
-              pips.appendChild(pip);
-            }
-            countEl.textContent = count + "/" + th;
-            meter.classList.toggle("warn", count >= th - 1 && th > 1);
-          }
-
-          fill("FACT", streaks.fact || 0);
-          fill("EMOTION", streaks.emotion || 0);
-        }
-
-        function updateStatusGuide() {
-          const el = document.getElementById("statusGuide");
-          const s = Game.state;
-          if (!s) {
-            el.className = "status-guide";
-            el.textContent = "재판 시작";
-            return;
-          }
-
-          el.className = "status-guide";
-
-          if (s.soulBroken) {
-            el.classList.add("warn");
-            el.textContent = "영혼이 파괴되었습니다. 메뉴에서 판결하십시오.";
-            return;
-          }
-
-          if (s.timeExpired) {
-            el.classList.add("warn");
-            el.textContent = "법정 시간이 끝났습니다. 메뉴에서 판결하십시오.";
-            return;
-          }
-
-          if (ui.focusZone === "cards") {
-            Game.setGuideCardFocus(ui.cardIndex);
-            el.textContent = "질문 카드" + (ui.cardIndex + 1) + " 선택,";
-            return;
-          }
-
-          if (ui.focusZone === "keywords") {
-            const ev = Game.getSelectedEvent();
-            const entries = getKeywordEntries(ev);
-            const item = entries[ui.keywordIndex];
-            if (item && item.revealed) {
-              el.textContent = "키워드 「" + item.keyword + "」 열람 중";
-            } else {
-              el.textContent = "미해금 단서를 보고 있습니다.";
-            }
-            return;
-          }
-
-          if (!s.selectedEventId) {
-            el.textContent = "인생사건을 선택해 주세요.";
-            return;
-          }
-
-          if (s.guidePhase === "trial_start") {
-            el.textContent = "재판 시작";
-            return;
-          }
-
-          el.textContent = "질문을 위한 카드를 선택해 주세요.";
-        }
-
-        function unlockedEvents() {
-          return (Game.state && Game.state.events) || [];
-        }
-
-        function formatInfoLines(list, label) {
-          const done = list.every(function (x) {
-            return x.revealed;
-          });
-          let html =
-            "<h4>" + label + (done ? ' <span class="badge">완료</span>' : "") + "</h4>";
-          list.forEach(function (f, idx) {
-            const labelText = f.revealed ? f.keyword || f.text : "???";
-            html +=
-              '<p class="info-line' +
-              (f.revealed ? "" : " hidden-info") +
-              '">' +
-              (idx + 1) +
-              ". " +
-              labelText +
-              "</p>";
-          });
-          return html;
-        }
-
-        function renderInlineDetail() {
-          const box = document.getElementById("caseInlineDetail");
-          const ev = Game.getSelectedEvent();
-          if (!ev) {
-            box.innerHTML = '<p class="note">인생사건을 선택하면 사실·감정 키워드가 표시됩니다.</p>';
-            return;
-          }
-
-          const entries = getKeywordEntries(ev);
-          if (!entries.length) {
-            box.innerHTML = '<p class="title">' + ev.title + "</p><p>단서가 없습니다.</p>";
-            return;
-          }
-
-          ui.keywordIndex = Math.max(0, Math.min(ui.keywordIndex, entries.length - 1));
-
-          let html = '<p class="title">' + ev.title + "</p>";
-          html += "<p>" + (ev.summary || "") + "</p>";
-          html += '<ul class="case-list" id="keywordList" role="listbox" aria-label="단서 키워드">';
-
-          entries.forEach(function (item, i) {
-            const selected =
-              ui.focusZone === "keywords" && i === ui.keywordIndex
-                ? " selected"
-                : "";
-            const locked = item.revealed ? "" : " locked";
-            const fresh =
-              item.revealed && item.id && ui.freshKeywords && ui.freshKeywords[item.id]
-                ? " fresh-unlock"
-                : "";
-            html +=
-              '<li class="case-item' +
-              selected +
-              locked +
-              fresh +
-              '" data-kw="' +
-              i +
-              '" data-info-id="' +
-              (item.id || "") +
-              '">' +
-              '<span class="cursor">▶</span>' +
-              "<span>" +
-              (item.kind === "FACT" ? "[사실] " : "[감정] ") +
-              (item.revealed ? item.keyword : "???") +
-              (item.revealed ? "" : ' <span class="note">(미해금)</span>') +
-              "</span></li>";
-          });
-          html += "</ul>";
-          box.innerHTML = html;
-
-          box.querySelectorAll("[data-kw]").forEach(function (li) {
-            li.addEventListener("click", function () {
-              ui.focusZone = "keywords";
-              ui.keywordIndex = Number(li.getAttribute("data-kw")) || 0;
-              playUiSelect();
-              if (!ui.stageBackup) pushStageBackup();
-              previewKeywordOnStage();
-              renderInlineDetail();
-              updateStatusGuide();
-            });
-          });
-
-          if (ui.fx && ui.fx.keywordId) {
-            const kwLi = box.querySelector('[data-info-id="' + ui.fx.keywordId + '"]');
-            if (kwLi) replayAnim(kwLi, "fx-unlock", 900);
-          }
-        }
-
-        function achievementUnlocked(ach, state) {
-          const req = ach.require || {};
-          if (req.nameRevealed) return !!state.nameRevealed;
-          if (req.eventUnlocked) {
-            const ev = state.events.find(function (e) {
-              return e.id === req.eventUnlocked;
-            });
-            return !!(ev && ev.unlocked);
-          }
-          if (req.eventFactsComplete) {
-            const ev = state.events.find(function (e) {
-              return e.id === req.eventFactsComplete;
-            });
-            return !!(ev && ev.facts.every(function (f) {
-              return f.revealed;
-            }));
-          }
-          if (req.anyEventEmotionsComplete) {
-            return state.events.some(function (ev) {
-              return (
-                ev.unlocked &&
-                ev.emotions.length &&
-                ev.emotions.every(function (f) {
-                  return f.revealed;
-                })
-              );
-            });
-          }
-          return false;
-        }
-
-        function renderEventList() {
-          const list = document.getElementById("caseList");
-          const events = unlockedEvents();
-          list.innerHTML = "";
-          const unlockedIdx = [];
-          events.forEach(function (ev, i) {
-            if (ev.unlocked) unlockedIdx.push(i);
-          });
-          if (unlockedIdx.length) {
-            if (unlockedIdx.indexOf(ui.eventIndex) < 0) ui.eventIndex = unlockedIdx[0];
-          }
-
-          events.forEach(function (ev, i) {
-            const li = document.createElement("li");
-            li.className = "case-item";
-            if (!ev.unlocked) li.classList.add("locked");
-            if (ev.id === Game.state.selectedEventId) li.classList.add("selected");
-            if (i === ui.eventIndex && ui.focusZone === "panel" && ui.tabIndex === 0) {
-              li.classList.add("selected");
-            }
-            li.setAttribute("data-event-id", ev.id);
-
-            const cursor = document.createElement("span");
-            cursor.className = "cursor";
-            cursor.textContent = "▶";
-
-            const body = document.createElement("span");
-            body.innerHTML =
-              (ev.unlocked ? ev.title : "??????") +
-              (ev.unlocked ? "" : ' <span class="lock">🔒</span>') +
-              (ev.id === Game.state.selectedEventId
-                ? '<span class="note">(조사 중)</span>'
-                : ev.unlocked
-                  ? '<span class="note">(선택 가능)</span>'
-                  : '<span class="note">(잠김)</span>');
-
-            li.appendChild(cursor);
-            li.appendChild(body);
-            if (ev.unlocked) {
-              li.addEventListener("click", function () {
-                ui.tabIndex = 0;
-                ui.focusZone = "panel";
-                ui.eventIndex = i;
-                playUiSelect();
-                playUiConfirm();
-                Game.selectEvent(ev.id);
-                refreshIngame();
-                setStage(ev.title, ev.summary || "이 인생사건을 조사합니다.");
-              });
-            }
-            list.appendChild(li);
-          });
-
-          renderInlineDetail();
-        }
-
-        function renderDetail() {
-          const body = document.getElementById("detailBody");
-          const s = Game.state;
-          if (!s) {
-            body.innerHTML = "<h3>상세정보</h3><p>심문이 시작되지 않았습니다.</p>";
-            return;
-          }
-
-          let html = "<h3>망자 프로필</h3>";
-          html += "<p>이름 : " + s.displayName + "</p>";
-          if (s.values && s.values.length) {
-            html +=
-              "<p>가치관 : " +
-              s.values
-                .map(function (v) {
-                  return "<span class=\"value-kw\">" + v + "</span>";
-                })
-                .join(" · ") +
-              "</p>";
-          } else {
-            html += "<p>가치관 : —</p>";
-          }
-          if (s.profileNote) {
-            html += "<p class=\"info-line\">" + s.profileNote + "</p>";
-          }
-
-          html +=
-            "<p>신뢰 " +
-            s.trust +
-            " · 스트레스 " +
-            s.stress +
-            (s.soulBroken ? " · 영혼 파괴" : "") +
-            (s.timeExpired ? " · 시간 만료" : "") +
-            "</p>";
-
-          html += "<h3>업적</h3>";
-          const achs = s.achievements || [];
-          if (!achs.length) {
-            html += "<p>등록된 업적이 없습니다.</p>";
-          } else {
-            achs.forEach(function (ach) {
-              const unlocked = achievementUnlocked(ach, s);
-              html +=
-                '<div class="ach-item' +
-                (unlocked ? "" : " locked") +
-                '"><div class="ach-title">' +
-                (unlocked ? ach.title : "??????") +
-                "</div><div class=\"ach-desc\">" +
-                (unlocked ? ach.desc || "" : "조건 미달성") +
-                "</div></div>";
-            });
-          }
-
-          body.innerHTML = html;
-        }
-
-        function menuItemLabel(item) {
-          if (item.id === "bgm") {
-            return "BGM: " + (BGM.enabled() ? "ON" : "OFF");
-          }
-          return item.label;
-        }
-
-        function renderIngameMenu() {
-          const list = document.getElementById("ingameMenuList");
-          list.innerHTML = "";
-          ingameMenuDefs.forEach(function (item, i) {
-            const li = document.createElement("li");
-            li.className = "case-item";
-            if (i === ui.menuIndex && ui.focusZone === "panel" && ui.tabIndex === 2) {
-              li.classList.add("selected");
-            }
-            const cursor = document.createElement("span");
-            cursor.className = "cursor";
-            cursor.textContent = "▶";
-            const body = document.createElement("span");
-            body.textContent = menuItemLabel(item);
-            li.appendChild(cursor);
-            li.appendChild(body);
-            li.addEventListener("click", function () {
-              ui.tabIndex = 2;
-              ui.focusZone = "panel";
-              ui.menuIndex = i;
-              playUiSelect();
-              playUiConfirm();
-              confirmIngameMenu();
-            });
-            list.appendChild(li);
-          });
-        }
-
-        function deltaText(n) {
-          if (!n) return "0";
-          return n > 0 ? "+" + n : String(n);
-        }
-
-        function deltaHtml(n) {
-          const cls = !n ? "delta-zero" : n > 0 ? "delta-up" : "delta-down";
-          return '<span class="' + cls + '">' + deltaText(n) + "</span>";
-        }
-
-        function renderCards(options) {
-          options = options || {};
-          const body = document.getElementById("cardsBody");
-          const cards = Game.getHandCards();
-          const locked = !Game.state || Game.isInterrogationLocked() || Game.state.phase !== "interrogation";
-          body.innerHTML = "";
-          body.classList.toggle("focus-zone", ui.focusZone === "cards");
-          if (!cards.length) return;
-          ui.cardIndex = Math.max(0, Math.min(ui.cardIndex, cards.length - 1));
-
-          cards.forEach(function (card, i) {
-            const row = document.createElement("div");
-            row.className =
-              "q-card" +
-              (i === ui.cardIndex && ui.focusZone === "cards" ? " selected" : "") +
-              (locked ? " disabled" : "");
-            if (options.animate) {
-              row.classList.add("fx-card-in");
-              row.style.animationDelay = i * 0.05 + "s";
-            }
-
-            const icon = document.createElement("div");
-            icon.className = "q-card-icon " + card.type;
-            icon.textContent = card.type === "FACT" ? "사실" : "감정";
-
-            const label = document.createElement("div");
-            label.className = "q-card-label";
-            const title = document.createElement("div");
-            title.textContent = card.text;
-            const meta = document.createElement("div");
-            meta.className = "q-card-meta";
-            const deltas = Game.cardDeltas(card) || {
-              trustDelta: card.trustDelta || 0,
-              stressDelta: card.stressDelta || 0,
-              matched: false,
-              value: card.value || null,
-            };
-            meta.innerHTML =
-              (card.value
-                ? '<span class="value-kw' +
-                  (deltas.matched ? " matched" : "") +
-                  '">' +
-                  card.value +
-                  "</span> · "
-                : "") +
-              "신뢰 " +
-              deltaHtml(deltas.trustDelta) +
-              " · 스트레스 " +
-              deltaHtml(deltas.stressDelta) +
-              (deltas.matched ? ' <span class="value-boost">공명</span>' : "") +
-              (Game.hasCardEffect(card) ? ' <span class="card-effect-tag">효과</span>' : "");
-            label.appendChild(title);
-            label.appendChild(meta);
-
-            row.appendChild(icon);
-            row.appendChild(label);
-            row.addEventListener("click", function () {
-              if (locked) return;
-              ui.focusZone = "cards";
-              ui.cardIndex = i;
-              playUiSelect();
-              updateCardHint();
-              renderCards();
-            });
-            body.appendChild(row);
-          });
-          if (options.animate) {
-            replayAnim(body, "fx-cards", 500);
-          }
-          updateCardHint();
-          updateStatusGuide();
-        }
-
-        function updateCardHint() {
-          const cards = Game.getHandCards();
-          const card = cards[ui.cardIndex];
-          const hint = document.getElementById("cardsHint");
-          if (!card) {
-            hint.textContent = "손패가 비었습니다.";
-            return;
-          }
-          const risk = Game.riskPreview(card);
-          const complete = Game.infoComplete(card.type);
-          let lines = [];
-          lines.push(card.text);
-          if (card.value) {
-            lines.push(
-              "가치관 · " +
-                card.value +
-                (risk && risk.valueMatch ? " (망자와 공명 · 스탯 효과 +1)" : "")
-            );
-          }
-          if (card.desc) lines.push(card.desc);
-          const effectLines = Game.describeCardEffect(card) || [];
-          effectLines.forEach(function (line) {
-            lines.push(line);
-          });
-          if (Game.isHighStress()) {
-            lines.push("고스트레스 — 추가 압박은 +1로 제한");
-          }
-          if (risk) {
-            lines.push(
-              "적용 후 신뢰 " +
-                risk.nextTrust +
-                " / 스트레스 " +
-                risk.nextStress +
-                " · 해금 예상 " +
-                Math.round(risk.unlockP * 100) +
-                "%"
-            );
-            if (risk.noStatIncreaseChance > 0) {
-              lines.push(
-                "스탯 상승 무효 확률 " + Math.round(risk.noStatIncreaseChance * 100) + "% (미리보기는 미적용)"
-              );
-            }
-            if (risk.stressDampened) lines.push("이 카드의 스트레스 증가가 제한됩니다.");
-            if (risk.soulRisk) lines.push("⚠ 사용 시 영혼 파괴 위험이 있습니다.");
-          }
-          if (complete) lines.push("이 속성의 정보는 모두 공개되었습니다.");
-          hint.innerHTML = lines
-            .map(function (l) {
-              return l.indexOf("⚠") === 0 ? '<span class="warn">' + l + "</span>" : l;
-            })
-            .join("\n");
-        }
-
-        function setTab(index) {
-          if (ui.focusZone === "keywords" && TABS[(index + TABS.length) % TABS.length] !== "cases") {
-            restoreStageBackup();
-            if (ui.focusZone === "keywords") ui.focusZone = "panel";
-          }
-          ui.tabIndex = (index + TABS.length) % TABS.length;
-          const tabId = TABS[ui.tabIndex];
-          tabButtons.forEach(function (btn, i) {
-            const on = i === ui.tabIndex;
-            btn.classList.toggle("active", on);
-            btn.setAttribute("aria-selected", on ? "true" : "false");
-          });
-          document.querySelectorAll(".tab-panel").forEach(function (panel) {
-            const on = panel.dataset.tab === tabId;
-            panel.classList.toggle("active", on);
-            if (on) panel.removeAttribute("hidden");
-            else panel.setAttribute("hidden", "");
-          });
-          document.getElementById("sideTabs").classList.toggle("focus-zone", ui.focusZone === "tabs");
-          if (tabId === "cases") renderEventList();
-          if (tabId === "detail") renderDetail();
-          if (tabId === "menu") renderIngameMenu();
-          renderCards({ animate: !!ui.animateCardsOnce });
-          ui.animateCardsOnce = false;
-          updateStatusGuide();
-          applyPendingFx();
-        }
-
-        function refreshIngame(options) {
-          options = options || {};
-          if (options.animateCards) ui.animateCardsOnce = true;
-          renderHud();
-          setTab(ui.tabIndex);
-        }
-
-        function enterIngame(options) {
-          hideRevealPick();
-          // 확정음이 BGM에 묻히지 않도록 짧게 지연
-          setTimeout(function () {
-            BGM.playTrack("court");
-          }, 160);
-          Game.start(Math.random, options || { resetCase: true });
-          ui.focusZone = "tabs";
-          ui.tabIndex = 0;
-          ui.eventIndex = 0;
-          ui.cardIndex = 0;
-          ui.menuIndex = 0;
-          ui.prevCourtTime = null;
-          ui.freshKeywords = {};
-          setInputLocked(false);
-          const ev = Game.getSelectedEvent();
-          setStage(
-            (Game.state && Game.state.intro) || "심문을 시작하십시오.",
-            ev ? ev.title : ""
-          );
-          showScreen("ingame");
-          refreshIngame();
-        }
-
-        function renderVerdictFocus() {
-          const onChoice = ui.verdictFocus === "choice";
-          const onSubmit = ui.verdictFocus === "submit";
-          const onBack = ui.verdictFocus === "back";
-          const backEl = document.getElementById("verdictBack");
-
-          document.getElementById("choiceGuilty").classList.toggle("selected", ui.verdictChoice === "guilty");
-          document.getElementById("choiceInnocent").classList.toggle("selected", ui.verdictChoice === "innocent");
-          document.getElementById("choiceGuilty").classList.toggle("nav-focus", onChoice && ui.verdictChoice === "guilty");
-          document.getElementById("choiceInnocent").classList.toggle("nav-focus", onChoice && ui.verdictChoice === "innocent");
-
-          document.getElementById("verdictSubmit").classList.toggle("selected", onSubmit);
-          backEl.classList.toggle("selected", onBack);
-
-          if (onChoice || onSubmit || onBack) {
-            const ta = document.getElementById("verdictReason");
-            if (document.activeElement === ta) ta.blur();
-          }
-        }
-
-        function openVerdict(forced) {
-          if (Game.state && Game.state.phase === "interrogation") {
-            Game.openVerdict(forced);
-          }
-          renderVerdict();
-          showScreen("verdict");
-          ui.verdictFocus = "choice";
-          const notice = document.getElementById("verdictNotice");
-          const back = document.getElementById("verdictBack");
-          const labels = Game.labels() || {};
-
-          if (Game.state && Game.state.soulBroken) {
-            back.classList.add("hidden");
-            notice.hidden = false;
-            notice.textContent = labels.soulBroken || "영혼 파괴 — 판결하십시오.";
-          } else if (Game.state && Game.state.timeExpired) {
-            back.classList.add("hidden");
-            notice.hidden = false;
-            notice.textContent = labels.timeExpired || "법정 시간이 끝났습니다. 판결하십시오.";
-          } else {
-            back.classList.remove("hidden");
-            const karma = Game.karmaPreview && Game.karmaPreview();
-            if (karma && karma.rushed) {
-              notice.hidden = false;
-              notice.textContent = labels.karmaWarn || "아직 알아본 것이 적습니다. 성급한 판결은 업보가 됩니다.";
-            } else {
-              notice.hidden = true;
-              notice.textContent = "";
-            }
-          }
-          document.getElementById("verdictReason").value = "";
-          if (!Game.systemEnabled("verdictReason")) {
-            document.getElementById("verdictReason").classList.add("hidden");
-          } else {
-            document.getElementById("verdictReason").classList.remove("hidden");
-          }
-          renderVerdictFocus();
-        }
-
-        function confirmVerdictFocus() {
-          if (ui.verdictFocus === "choice") {
-            ui.verdictFocus = "submit";
-            renderVerdictFocus();
-            return;
-          }
-          if (ui.verdictFocus === "submit") {
-            submitVerdict();
-            return;
-          }
-          if (ui.verdictFocus === "back") {
-            if (Game.isInterrogationLocked && Game.isInterrogationLocked()) return;
-            if (Game.state) Game.state.phase = "interrogation";
-            showScreen("ingame");
-            refreshIngame();
-          }
-        }
-
-        function renderVerdict() {
-          const box = document.getElementById("verdictReview");
-          const s = Game.state;
-          if (!s) return;
-          let html = "<h2>확보한 정보</h2>";
-          html += "<p>망자: <strong>" + s.displayName + "</strong></p>";
-          html +=
-            "<p>신뢰 " +
-            s.trust +
-            " · 스트레스 " +
-            s.stress +
-            (s.soulBroken ? " · 영혼 파괴" : "") +
-            (s.timeExpired ? " · 시간 만료" : "") +
-            "</p>";
-          s.events.forEach(function (ev) {
-            if (!ev.unlocked) return;
-            html += "<h3>" + ev.title + "</h3>";
-            html += "<p><em>사실</em></p><ul>";
-            ev.facts.forEach(function (f) {
-              html +=
-                "<li>" +
-                (f.revealed ? "<strong>" + (f.keyword || "사실") + "</strong> — " + f.text : "???") +
-                "</li>";
-            });
-            html += "</ul><p><em>감정</em></p><ul>";
-            ev.emotions.forEach(function (f) {
-              html +=
-                "<li>" +
-                (f.revealed ? "<strong>" + (f.keyword || "감정") + "</strong> — " + f.text : "???") +
-                "</li>";
-            });
-            html += "</ul>";
-          });
-          box.innerHTML = html;
-        }
-
-        function submitVerdict() {
-          const reason = document.getElementById("verdictReason").value || "";
-          const res = Game.submitVerdict(ui.verdictChoice, reason);
-          if (!res.ok) return;
-          showEndScreen(ui.verdictChoice);
-        }
-
-        function confirmIngameMenu() {
-          const item = ingameMenuDefs[ui.menuIndex];
-          if (!item) return;
-          if (item.id === "title") showScreen("title");
-          else if (item.id === "verdict") openVerdict(false);
-          else if (item.id === "bgm") {
-            BGM.toggle();
-            renderIngameMenu();
-          } else if (item.id === "resume") {
-            ui.tabIndex = 0;
-            ui.focusZone = "panel";
-            setTab(0);
-          }
-        }
-
-        function useSelectedCard() {
-          if (ui.busy || ui.revealPick) return;
-          if (!Game.state || Game.isInterrogationLocked() || Game.state.phase !== "interrogation") return;
-
-          setInputLocked(true);
-          const result = Game.useCard(ui.cardIndex);
-          if (!result.ok) {
-            if (result.reason === "info_complete") {
-              setStage("이미 이 방향의 정보는 모두 공개되었습니다.", "다른 속성 카드를 쓰거나 인생사건을 바꾸십시오.");
-              pulseStage("fail");
-            } else if (result.reason === "no_event") {
-              setStage("먼저 인생사건을 선택하십시오.", "");
-              pulseStage("fail");
-            } else {
-              pulseStage("fail");
-            }
-            refreshIngame();
-            setTimeout(function () {
-              setInputLocked(false);
-            }, 350);
-            return;
-          }
-
-          const card = result.card;
-          let main = "[" + card.type + "] " + card.text;
-          let sub = "신뢰 " + result.trust + " · 스트레스 " + result.stress;
-          let stageKind = "react";
-          ui.fx = null;
-
-          if (result.valueMatch && result.value) {
-            sub += " · 가치관 공명(" + result.value + ")";
-          }
-          if (result.noStatIncrease) {
-            sub += " · 스탯 상승 무효";
-          }
-          if (result.stressDampened) {
-            sub += " · 스트레스 상승 제한";
-          }
-          if (result.roll) {
-            sub +=
-              " · 해금 " +
-              (result.roll.success ? "성공" : "실패") +
-              " (" +
-              Math.round(result.roll.p * 100) +
-              "%)";
-          }
-
-          pulseGauges();
-
-          if (result.needChoose && result.choices && result.choices.length > 1) {
-            openRevealPick(result.choices, card.type);
-            return;
-          }
-
-          if (result.failBurst && result.failBurst.ok) {
-            applyFailBurst(result.failBurst, {
-              refresh: { animateCards: true },
-              bonusReveals: result.bonusReveals,
-            });
-            finishCardRound(!!(result.soulBroken || result.timeExpired));
-            return;
-          }
-
-          if (result.reveal && result.reveal.ok) {
-            applyRevealResult(result.reveal, {
-              refresh: { animateCards: true },
-              bonusReveals: result.bonusReveals,
-            });
-            finishCardRound(!!(result.soulBroken || result.timeExpired));
-            return;
-          }
-
-          if (result.bonusReveals && result.bonusReveals.length) {
-            applyBonusOnly(result.bonusReveals, { refresh: { animateCards: true } });
-            finishCardRound(!!(result.soulBroken || result.timeExpired));
-            return;
-          }
-
-          if (result.roll && !result.roll.success) {
-            main = "망자는 입을 다물었다.";
-            stageKind = "fail";
-            const th = Game.failCollapseThreshold();
-            const streak =
-              card.type === "FACT" ? result.failStreakFact : result.failStreakEmotion;
-            if (Game.systemEnabled("failCollapse") && streak > 0) {
-              sub +=
-                "\n" +
-                (card.type === "FACT" ? "사실" : "감정") +
-                " 실패 " +
-                streak +
-                "/" +
-                th +
-                (streak >= th - 1 ? " · 다음 실패 시 일괄 공개" : "");
-            }
-          }
-
-          setStage(main, sub);
-          pulseStage(stageKind);
-          refreshIngame({ animateCards: true });
-
-          const waitMs = stageKind === "fail" ? 700 : 720;
-          const forceEnd = !!(result.soulBroken || result.timeExpired);
-          setTimeout(function () {
-            const s = Game.state;
-            if (!s) {
-              setInputLocked(false);
-              return;
-            }
-            const max = s.courtTimeMax || 10;
-            const title = forceEnd
-              ? s.soulBroken
-                ? "영혼 파괴"
-                : "법정시간 종료"
-              : "다음 법정시간";
-            const toastSub = forceEnd
-              ? s.soulBroken
-                ? "추가 심문이 불가합니다. 판결하십시오."
-                : "시간이 모두 소모되었습니다. 판결하십시오."
-              : "남은 시간 " + s.courtTime + "/" + max;
-
-            showGameToast(title, toastSub, function () {
-              setInputLocked(false);
-            });
-
-            if (forceEnd) {
-              setTimeout(function () {
-                openVerdict(true);
-              }, 500);
-            }
-          }, waitMs);
-        }
-
-        function moveEvent(delta) {
-          const events = unlockedEvents();
-          const unlocked = [];
-          events.forEach(function (ev, i) {
-            if (ev.unlocked) unlocked.push(i);
-          });
-          if (!unlocked.length) return;
-          let pos = unlocked.indexOf(ui.eventIndex);
-          if (pos < 0) pos = 0;
-          pos = (pos + delta + unlocked.length) % unlocked.length;
-          ui.eventIndex = unlocked[pos];
-          ui.keywordIndex = 0;
-          const ev = events[ui.eventIndex];
-          if (ev && ev.unlocked) {
-            Game.selectEvent(ev.id);
-            setStage(ev.title, ev.summary || "");
-          }
-          renderEventList();
-          updateStatusGuide();
-        }
-
-        function enterKeywords() {
-          const ev = Game.getSelectedEvent();
-          const entries = getKeywordEntries(ev);
-          if (!entries.length) return;
-          if (ui.focusZone !== "keywords") {
-            pushStageBackup();
-          }
-          ui.focusZone = "keywords";
-          ui.keywordIndex = Math.max(0, Math.min(ui.keywordIndex, entries.length - 1));
-          previewKeywordOnStage();
-          renderEventList();
-          updateStatusGuide();
-        }
-
-        function leaveKeywords() {
-          if (ui.focusZone === "keywords") {
-            restoreStageBackup();
-          }
-          ui.focusZone = "panel";
-          renderEventList();
-          updateStatusGuide();
-        }
-
-        function moveKeyword(delta) {
-          const entries = getKeywordEntries(Game.getSelectedEvent());
-          if (!entries.length) return;
-          ui.keywordIndex = (ui.keywordIndex + delta + entries.length) % entries.length;
-          previewKeywordOnStage();
-          renderInlineDetail();
-          updateStatusGuide();
-        }
-
-        function selectFocusedEvent() {
-          const ev = unlockedEvents()[ui.eventIndex];
-          if (!ev || !ev.unlocked) return;
-          Game.selectEvent(ev.id);
-          ui.keywordIndex = 0;
-          setStage(ev.title, ev.summary || "");
-          refreshIngame();
-          enterKeywords();
-        }
-
-        function quitGame() {
-          window.close();
-          if (!window.closed) alert("브라우저 탭을 닫아 종료해 주세요.");
-        }
-
-        // input
-        document.addEventListener("keydown", function (e) {
-          if (ui.revealPick) {
-            e.preventDefault();
-            const pick = ui.revealPick;
-            const n = pick.choices.length;
-            if (e.key === "ArrowUp") {
-              pick.index = (pick.index + n - 1) % n;
-              playUiSelect();
-              renderRevealPick();
-            } else if (e.key === "ArrowDown") {
-              pick.index = (pick.index + 1) % n;
-              playUiSelect();
-              renderRevealPick();
-            } else if (e.key === "Enter" || e.key === " ") {
-              confirmRevealPick();
-            }
-            return;
-          }
-
-          if (ui.busy) {
-            e.preventDefault();
-            return;
-          }
-
-          if (ui.screen === "title") {
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              ui.titleIndex = (ui.titleIndex + 2) % 3;
-              playUiSelect();
-              renderTitleMenu();
-            } else if (e.key === "ArrowDown") {
-              e.preventDefault();
-              ui.titleIndex = (ui.titleIndex + 1) % 3;
-              playUiSelect();
-              renderTitleMenu();
-            } else if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              playUiConfirm();
-              const action = titleMenuItems[ui.titleIndex].dataset.action;
-              if (action === "start") enterIngame();
-              else if (action === "settings") showScreen("settings");
-              else if (action === "quit") quitGame();
-            }
-            return;
-          }
-
-          if (ui.screen === "settings") {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              showScreen("title");
-              renderTitleMenu();
-            }
-            return;
-          }
-
-          if (ui.screen === "end") {
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              ui.endIndex = (ui.endIndex + endMenuItems.length - 1) % endMenuItems.length;
-              playUiSelect();
-              renderEndMenu();
-            } else if (e.key === "ArrowDown") {
-              e.preventDefault();
-              ui.endIndex = (ui.endIndex + 1) % endMenuItems.length;
-              playUiSelect();
-              renderEndMenu();
-            } else if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              playUiConfirm();
-              confirmEndMenu();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              ui.endIndex = 1;
-              playUiSelect();
-              renderEndMenu();
-              playUiConfirm();
-              confirmEndMenu();
-            }
-            return;
-          }
-
-          if (ui.screen === "verdict") {
-            const typing = document.activeElement === document.getElementById("verdictReason");
-            if (typing) {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                document.getElementById("verdictReason").blur();
-                ui.verdictFocus = "submit";
-                playUiSelect();
-                renderVerdictFocus();
-              }
-              return;
-            }
-
-            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-              e.preventDefault();
-              if (ui.verdictFocus === "choice") {
-                ui.verdictChoice = ui.verdictChoice === "guilty" ? "innocent" : "guilty";
-              } else {
-                const backHidden = document.getElementById("verdictBack").classList.contains("hidden");
-                if (!backHidden) {
-                  ui.verdictFocus = ui.verdictFocus === "submit" ? "back" : "submit";
-                } else {
-                  ui.verdictFocus = "submit";
-                }
-              }
-              playUiSelect();
-              renderVerdictFocus();
-              return;
-            }
-
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              if (ui.verdictFocus === "choice") {
-                ui.verdictFocus = "submit";
-                playUiSelect();
-                renderVerdictFocus();
-              }
-              return;
-            }
-
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              if (ui.verdictFocus === "submit" || ui.verdictFocus === "back") {
-                ui.verdictFocus = "choice";
-                playUiSelect();
-                renderVerdictFocus();
-              }
-              return;
-            }
-
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              playUiConfirm();
-              confirmVerdictFocus();
-              return;
-            }
-
-            if (e.key === "Escape") {
-              e.preventDefault();
-              if (
-                Game.state &&
-                Game.state.phase === "verdict" &&
-                !(Game.isInterrogationLocked && Game.isInterrogationLocked())
-              ) {
-                Game.state.phase = "interrogation";
-                showScreen("ingame");
-                refreshIngame();
-              }
-            }
-            return;
-          }
-
-          if (ui.screen !== "ingame") return;
-
-          if (e.key === "Escape") {
-            e.preventDefault();
-            showScreen("title");
-            return;
-          }
-
-          if (ui.focusZone === "cards") {
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              ui.cardIndex = (ui.cardIndex - 1 + Game.getHandCards().length) % Math.max(1, Game.getHandCards().length);
-              playUiSelect();
-              renderCards();
-            } else if (e.key === "ArrowDown") {
-              e.preventDefault();
-              ui.cardIndex = (ui.cardIndex + 1) % Math.max(1, Game.getHandCards().length);
-              playUiSelect();
-              renderCards();
-            } else if (e.key === "ArrowLeft") {
-              e.preventDefault();
-              ui.focusZone = "panel";
-              playUiSelect();
-              setTab(ui.tabIndex);
-            } else if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              playUiConfirm();
-              useSelectedCard();
-            }
-            return;
-          }
-
-          if (ui.focusZone === "keywords") {
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              if (ui.keywordIndex === 0) {
-                playUiSelect();
-                leaveKeywords();
-                return;
-              }
-              playUiSelect();
-              moveKeyword(-1);
-              return;
-            }
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              playUiSelect();
-              moveKeyword(1);
-              return;
-            }
-            if (e.key === "ArrowLeft") {
-              e.preventDefault();
-              playUiSelect();
-              leaveKeywords();
-              return;
-            }
-            if (e.key === "ArrowRight") {
-              e.preventDefault();
-              playUiSelect();
-              leaveKeywords();
-              ui.focusZone = "cards";
-              renderCards();
-              document.getElementById("sideTabs").classList.remove("focus-zone");
-              return;
-            }
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              playUiConfirm();
-              previewKeywordOnStage();
-              return;
-            }
-            return;
-          }
-
-          if (e.key === "ArrowLeft") {
-            e.preventDefault();
-            ui.focusZone = "tabs";
-            playUiSelect();
-            setTab(ui.tabIndex - 1);
-            return;
-          }
-          if (e.key === "ArrowRight") {
-            e.preventDefault();
-            if (ui.focusZone === "panel" || TABS[ui.tabIndex] === "menu") {
-              ui.focusZone = "cards";
-              playUiSelect();
-              renderCards();
-              document.getElementById("sideTabs").classList.remove("focus-zone");
-              return;
-            }
-            ui.focusZone = "tabs";
-            playUiSelect();
-            setTab(ui.tabIndex + 1);
-            return;
-          }
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            if (ui.focusZone === "tabs") {
-              ui.focusZone = "panel";
-              playUiSelect();
-              setTab(ui.tabIndex);
-              return;
-            }
-            if (TABS[ui.tabIndex] === "cases") {
-              // 해금된 인생사건끼리 이동 (선택도 함께). 키워드는 Enter
-              playUiSelect();
-              moveEvent(1);
-            } else if (TABS[ui.tabIndex] === "menu") {
-              ui.menuIndex = (ui.menuIndex + 1) % ingameMenuDefs.length;
-              playUiSelect();
-              renderIngameMenu();
-            }
-            return;
-          }
-          if (e.key === "ArrowUp") {
-            e.preventDefault();
-            if (ui.focusZone === "panel") {
-              if (TABS[ui.tabIndex] === "cases") {
-                const unlocked = unlockedEvents()
-                  .map(function (ev, i) {
-                    return ev.unlocked ? i : -1;
-                  })
-                  .filter(function (i) {
-                    return i >= 0;
-                  });
-                if (unlocked.length && ui.eventIndex === unlocked[0]) {
-                  ui.focusZone = "tabs";
-                  playUiSelect();
-                  setTab(ui.tabIndex);
-                  return;
-                }
-                playUiSelect();
-                moveEvent(-1);
-                return;
-              }
-              if (TABS[ui.tabIndex] === "menu") {
-                if (ui.menuIndex === 0) {
-                  ui.focusZone = "tabs";
-                  playUiSelect();
-                  setTab(ui.tabIndex);
-                  return;
-                }
-                ui.menuIndex -= 1;
-                playUiSelect();
-                renderIngameMenu();
-                return;
-              }
-              ui.focusZone = "tabs";
-              playUiSelect();
-              setTab(ui.tabIndex);
-            }
-            return;
-          }
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            playUiConfirm();
-            if (ui.focusZone === "tabs") {
-              ui.focusZone = "panel";
-              setTab(ui.tabIndex);
-              return;
-            }
-            if (TABS[ui.tabIndex] === "cases") selectFocusedEvent();
-            else if (TABS[ui.tabIndex] === "menu") confirmIngameMenu();
-          }
-        });
-
-        titleMenuItems.forEach(function (item, i) {
-          item.addEventListener("click", function () {
-            ui.titleIndex = i;
-            renderTitleMenu();
-            playUiConfirm();
-            const action = item.dataset.action;
-            if (action === "start") enterIngame();
-            else if (action === "settings") showScreen("settings");
-            else if (action === "quit") quitGame();
-          });
-        });
-
-        tabButtons.forEach(function (btn, i) {
-          btn.addEventListener("click", function () {
-            ui.focusZone = "tabs";
-            playUiSelect();
-            setTab(i);
-          });
-        });
-
-        document.getElementById("choiceGuilty").addEventListener("click", function () {
-          ui.verdictChoice = "guilty";
-          ui.verdictFocus = "choice";
-          playUiSelect();
-          renderVerdictFocus();
-        });
-        document.getElementById("choiceInnocent").addEventListener("click", function () {
-          ui.verdictChoice = "innocent";
-          ui.verdictFocus = "choice";
-          playUiSelect();
-          renderVerdictFocus();
-        });
-        document.getElementById("verdictSubmit").addEventListener("click", function () {
-          playUiConfirm();
-          submitVerdict();
-        });
-        document.getElementById("verdictBack").addEventListener("click", function () {
-          playUiConfirm();
-          if (Game.isInterrogationLocked && Game.isInterrogationLocked()) return;
-          if (Game.state) Game.state.phase = "interrogation";
-          showScreen("ingame");
-          refreshIngame();
-        });
-        document.getElementById("verdictReason").addEventListener("focus", function () {
-          ui.verdictFocus = "reason";
-          document.getElementById("verdictSubmit").classList.remove("selected");
-          document.getElementById("verdictBack").classList.remove("selected");
-        });
-        document.getElementById("downloadLogBtn").addEventListener("click", function () {
-          Game.downloadLog();
-        });
-
-        endMenuItems.forEach(function (item, i) {
-          item.addEventListener("click", function () {
-            ui.endIndex = i;
-            renderEndMenu();
-            playUiConfirm();
-            confirmEndMenu();
-          });
-        });
+        const titleItems = [
+          { id: "start", label: "재판 시작" },
+          { id: "log", label: "로그 저장" },
+        ];
+        const menuItems = [
+          { id: "verdict", label: "판결하기" },
+          { id: "lobby", label: "로비로 나가기" },
+          { id: "title", label: "타이틀로" },
+        ];
+        const endMenuItems = [
+          { id: "next", label: "다음 재판하기" },
+          { id: "title", label: "심판종료" },
+        ];
 
         const BGM = {
           audio: null,
           track: null,
-          started: false,
+          muted: false,
           paths() {
-            const audio = window.GAME_CONTENT && window.GAME_CONTENT.audio;
+            const a = (window.GAME_CONTENT && window.GAME_CONTENT.audio) || {};
             return {
-              court: (audio && audio.bgm) || "assets/audio/bgm_strict_verdict.mp3",
-              heaven: (audio && audio.bgmHeaven) || "assets/audio/bgm_heaven_end.wav",
-              hell: (audio && audio.bgmHell) || "assets/audio/bgm_hell_end.wav",
+              court: a.bgm || "assets/audio/bgm_strict_verdict.mp3",
+              heaven: a.bgmHeaven || "assets/audio/bgm_heaven_end.wav",
+              hell: a.bgmHell || "assets/audio/bgm_hell_end.wav",
             };
           },
           volume() {
-            return (window.GAME_CONFIG && window.GAME_CONFIG.balance && window.GAME_CONFIG.balance.bgmVolume) != null
-              ? window.GAME_CONFIG.balance.bgmVolume
-              : 0.45;
+            const b = (window.GAME_CONFIG && window.GAME_CONFIG.balance) || {};
+            return b.bgmVolume != null ? b.bgmVolume : 0.45;
           },
           enabled() {
-            return !(
-              window.GAME_CONFIG &&
-              window.GAME_CONFIG.systems &&
-              window.GAME_CONFIG.systems.bgm &&
-              window.GAME_CONFIG.systems.bgm.enabled === false
-            );
+            const s = window.GAME_CONFIG && window.GAME_CONFIG.systems && window.GAME_CONFIG.systems.bgm;
+            return !s || s.enabled !== false;
           },
           stop() {
             if (this.audio) {
               this.audio.pause();
-              try {
-                this.audio.currentTime = 0;
-              } catch (err) {}
+              try { this.audio.currentTime = 0; } catch (e) {}
             }
             this.audio = null;
             this.track = null;
-            this.started = false;
           },
-          playTrack(name) {
-            if (!this.enabled()) return;
+          play(name) {
+            if (!this.enabled() || this.muted) return;
             const path = this.paths()[name];
             if (!path) return;
             if (this.track === name && this.audio && !this.audio.paused) return;
-            if (this.audio) {
-              this.audio.pause();
-              this.audio = null;
-            }
+            this.stop();
+            this.track = name;
             this.audio = new Audio(path);
             this.audio.loop = true;
             this.audio.volume = this.volume();
-            this.track = name;
             const p = this.audio.play();
-            if (p && typeof p.then === "function") {
-              p.then(function () {
-                BGM.started = true;
-              }).catch(function () {});
+            if (p && p.catch) p.catch(function () {});
+          },
+        };
+
+        function playSfx(kind) {
+          const sys = window.GAME_CONFIG && window.GAME_CONFIG.systems;
+          if (kind === "select" && sys && sys.uiSelectSfx && sys.uiSelectSfx.enabled === false) return;
+          if (kind === "confirm" && sys && sys.uiConfirmSfx && sys.uiConfirmSfx.enabled === false) return;
+          const a = (window.GAME_CONTENT && window.GAME_CONTENT.audio) || {};
+          const path =
+            kind === "confirm"
+              ? a.uiConfirm || "assets/audio/ui_confirm.mp3"
+              : a.uiSelect || "assets/audio/ui_select.wav";
+          const vol = ((window.GAME_CONFIG && window.GAME_CONFIG.balance) || {}).sfxVolume;
+          const audio = new Audio(path);
+          audio.volume = vol != null ? vol : 0.55;
+          const p = audio.play();
+          if (p && p.catch) p.catch(function () {});
+        }
+
+        function applyArt() {
+          const art = Game.contentArt();
+          if (art.titleBg) {
+            document.getElementById("screen-title").style.setProperty("--title-bg", 'url("' + art.titleBg + '")');
+          }
+          if (art.ingameBg) {
+            document.getElementById("screen-ingame").style.setProperty("--ingame-bg", 'url("' + art.ingameBg + '")');
+          }
+          if (art.stageSoul) {
+            document.getElementById("stageFrame").style.setProperty("--stage-art", 'url("' + art.stageSoul + '")');
+          }
+        }
+
+        function showScreen(id) {
+          ui.screen = id;
+          ["title", "lobby", "ingame", "verdict", "end"].forEach(function (name) {
+            document.getElementById("screen-" + name).classList.toggle("active", name === id);
+          });
+        }
+
+        function toast(msg) {
+          const el = document.getElementById("toast");
+          el.textContent = msg;
+          el.classList.add("show");
+          clearTimeout(ui._toast);
+          ui._toast = setTimeout(function () {
+            el.classList.remove("show");
+          }, 1600);
+        }
+
+        function setStage(main, sub) {
+          document.getElementById("stageMain").textContent = main || "";
+          document.getElementById("stageSub").textContent = sub || "";
+        }
+
+        function renderTitle() {
+          const menu = document.getElementById("titleMenu");
+          menu.innerHTML = "";
+          titleItems.forEach(function (item, i) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "title-item" + (i === ui.titleIndex ? " selected" : "");
+            btn.textContent = item.label;
+            btn.addEventListener("click", function () {
+              ui.titleIndex = i;
+              playSfx("select");
+              confirmTitle();
+            });
+            menu.appendChild(btn);
+          });
+        }
+
+        function confirmTitle() {
+          playSfx("confirm");
+          const item = titleItems[ui.titleIndex];
+          if (!item) return;
+          if (item.id === "log") {
+            Game.downloadLog();
+            toast("로그를 저장했습니다.");
+            return;
+          }
+          Game.startNewRun();
+          showScreen("lobby");
+          renderLobby();
+          setTimeout(function () { BGM.play("court"); }, 180);
+        }
+
+        function formatCostMinutes(n) {
+          return "-" + n + "분";
+        }
+
+        function renderLobby() {
+          const s = Game.state;
+          if (!s || s.phase !== "lobby") return;
+          const L = Game.labels();
+          const timeLabel = Game.formatCourtTime(s.courtTimeMinutes);
+          const canTrial = Game.canStartTrial();
+          document.getElementById("lobbyMeta").textContent =
+            "Day " + s.day +
+            " · 법정시간 " + timeLabel +
+            " · 영력 " + s.spirit + "/" + s.spiritMax +
+            " · " + (L.essence || "영기") + " " + s.essence +
+            " · 환생석 " + s.rebirthStones + "개 · 환생문 " + s.rebirthDaysLeft + "/" + s.rebirthDaysTotal + "일";
+          const sum = s.lastSummary;
+          const box = document.getElementById("lobbySummary");
+          if (!sum) {
+            box.textContent =
+              "아직 판결 기록이 없습니다.\n" +
+              "같은 날에는 법정시간이 이어집니다.\n" +
+              "영력은 영기로만 회복됩니다.";
+          } else {
+            box.textContent =
+              "직전 판결\n" +
+              "망자: " + sum.deceasedName + "\n" +
+              "판결: " + (sum.choice === "heaven" ? L.heaven : L.hell) +
+              (sum.rushed ? " (성급)" : "") + "\n" +
+              "사실 " + sum.factsRead + "/" + sum.eventCount +
+              " · 감정 " + sum.emotionsRead + "/" + sum.eventCount + "\n" +
+              "남은 법정시간 " + (sum.courtTimeLeftLabel || Game.formatCourtTime(sum.courtTimeMinutesLeft)) +
+              " · 영력 " + sum.spiritLeft +
+              "\n획득 " + (L.essence || "영기") + " +" + (sum.essenceGain != null ? sum.essenceGain : 0) +
+              (sum.rushed ? " (성급·기운 보존)" : " (심문 소모)") +
+              (sum.rebirthStoneGained ? " · 환생석 +1 (전부 열람)" : "") +
+              (s.dayJustAdvanced ? "\n\n" + (L.dayEnded || "하루가 지나 법정시간이 회복되었습니다.") : "") +
+              (!canTrial ? "\n\n" + (L.timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.") : "");
+          }
+          if (!sum && !canTrial) {
+            box.textContent +=
+              "\n\n" + (L.timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
+          }
+          const spBal = (Game.balance().spirit || {});
+          const restoreCost = spBal.restoreCostEssence != null ? spBal.restoreCostEssence : 1;
+          const restoreAmt = spBal.restoreAmount != null ? spBal.restoreAmount : 2;
+          const actions = [
+            {
+              id: "next",
+              label: canTrial ? "다음 재판 준비" : "다음 재판 준비 (법정시간 부족)",
+              primary: canTrial,
+              disabled: !canTrial,
+            },
+            {
+              id: "restore",
+              label: "영력 회복 (+" + restoreAmt + " / " + (L.essence || "영기") + " -" + restoreCost + ")",
+            },
+            {
+              id: "endday",
+              label: "하루 마치기 (법정시간 회복)",
+              primary: !canTrial,
+            },
+            { id: "title", label: "타이틀로" },
+          ];
+          // 시간 소진 시 기본 선택을 '하루 마치기'로
+          if (!canTrial) {
+            const endIdx = actions.findIndex(function (a) { return a.id === "endday"; });
+            if (ui.lobbyIndex === 0 || (ui._lobbyActions && ui._lobbyActions[ui.lobbyIndex] && ui._lobbyActions[ui.lobbyIndex].disabled)) {
+              ui.lobbyIndex = endIdx >= 0 ? endIdx : 0;
+            }
+          }
+          const wrap = document.getElementById("lobbyActions");
+          wrap.innerHTML = "";
+          actions.forEach(function (a, i) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.disabled = !!a.disabled;
+            btn.className =
+              "lobby-btn" +
+              (a.primary ? " primary" : "") +
+              (i === ui.lobbyIndex ? " selected" : "");
+            btn.textContent = a.label;
+            btn.addEventListener("click", function () {
+              if (a.disabled) {
+                toast(L.timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
+                return;
+              }
+              ui.lobbyIndex = i;
+              playSfx("select");
+              confirmLobby();
+            });
+            wrap.appendChild(btn);
+          });
+          ui._lobbyActions = actions;
+          if (ui.lobbyIndex >= actions.length) ui.lobbyIndex = 0;
+        }
+
+        function confirmLobby() {
+          const a = (ui._lobbyActions || [])[ui.lobbyIndex];
+          if (!a) return;
+          if (a.disabled) {
+            toast(Game.labels().timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
+            return;
+          }
+          playSfx("confirm");
+          if (a.id === "title") {
+            BGM.stop();
+            showScreen("title");
+            renderTitle();
+            return;
+          }
+          if (a.id === "restore") {
+            const L = Game.labels();
+            const r = Game.restoreSpirit();
+            if (!r.ok) {
+              if (r.reason === "no_essence") toast(L.essenceLow || "영기가 부족합니다.");
+              else if (r.reason === "full") toast("영력이 이미 가득합니다.");
+              else toast("회복할 수 없습니다.");
+              renderLobby();
+              return;
+            }
+            toast((L.spiritRestored || "영력을 회복했습니다.") + " (+" + r.amount + ")");
+            renderLobby();
+            return;
+          }
+          if (a.id === "endday") {
+            Game.advanceDay();
+            toast((Game.labels().dayEnded) || "하루가 지나 법정시간이 회복되었습니다.");
+            ui.lobbyIndex = 0;
+            renderLobby();
+            return;
+          }
+          if (!Game.canStartTrial()) {
+            toast(Game.labels().timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
+            renderLobby();
+            return;
+          }
+          const started = Game.startTrial();
+          if (!started) {
+            toast(Game.labels().timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
+            renderLobby();
+            return;
+          }
+          ui.tab = "events";
+          ui.listIndex = 0;
+          ui.focus = "list";
+          showScreen("ingame");
+          refreshTrial(true);
+          BGM.play("court");
+        }
+
+        function refreshTrial(fresh) {
+          const s = Game.state;
+          if (!s || s.phase !== "trial") return;
+          const L = Game.labels();
+          document.getElementById("courtName").textContent = s.courtName || L.courtName;
+          document.getElementById("chipStone").textContent =
+            "환생석 : " + s.rebirthStones + "개 · " + (L.essence || "영기") + " " + s.essence;
+          document.getElementById("chipDays").textContent = "환생문: " + s.rebirthDaysLeft + "일 · Day " + s.day;
+
+          const hours = s.courtTimeHours || 8;
+          const hoursLeft = Math.ceil((s.courtTimeMinutes || 0) / 60);
+          const segs = document.getElementById("timeSegs");
+          segs.innerHTML = "";
+          for (let i = 0; i < hours; i++) {
+            const d = document.createElement("span");
+            d.className = "seg" + (i < hoursLeft ? " on" : "");
+            segs.appendChild(d);
+          }
+          document.getElementById("timeValue").textContent =
+            Game.formatCourtTime(s.courtTimeMinutes) + " / " + hours + ":00";
+          const maxS = s.spiritMax || 10;
+          document.getElementById("spiritFill").style.width = Math.round((s.spirit / maxS) * 100) + "%";
+          document.getElementById("spiritValue").textContent = s.spirit + "/" + maxS;
+
+          const costs = Game.actionCosts();
+          document.getElementById("lblFact").textContent = L.factAction || "사실 조사하기";
+          document.getElementById("lblEmotion").textContent = L.emotionAction || "감정 들여다 보기";
+          document.getElementById("costFact").textContent = "법정시간 " + formatCostMinutes(costs.factTime);
+          document.getElementById("costEmotion").textContent =
+            "법정시간 " + formatCostMinutes(costs.emotionTime) + " · 영력 -" + costs.emotionSpirit;
+
+          document.querySelectorAll("#leftTabs .tab").forEach(function (t) {
+            t.classList.toggle("active", t.getAttribute("data-tab") === ui.tab);
+          });
+
+          renderLeftList();
+          renderActions();
+          updateGuide();
+          updateDesc();
+
+          if (fresh) {
+            setStage(s.intro || "망자가 법정에 섰다.", "인생 사건의 연표를 확인하십시오.");
+          }
+        }
+
+        function readLabel(ev) {
+          if (ev.factRead && ev.emotionRead) return "사실·감정 열람";
+          if (ev.factRead) return "사실 열람";
+          return "미열람";
+        }
+
+        function renderLeftList() {
+          const s = Game.state;
+          const list = document.getElementById("leftList");
+          list.innerHTML = "";
+          if (ui.tab === "events") {
+            document.getElementById("leftHint").textContent = "SELECT";
+            const events = s.events || [];
+            ui.listIndex = Math.max(0, Math.min(ui.listIndex, Math.max(0, events.length - 1)));
+            events.forEach(function (ev, i) {
+              const row = document.createElement("div");
+              row.className = "event-row" + (i === ui.listIndex && ui.focus === "list" ? " selected" : "");
+              const cur = document.createElement("span");
+              cur.className = "cursor";
+              cur.textContent = i === ui.listIndex ? "▶" : "";
+              const body = document.createElement("div");
+              const title = document.createElement("div");
+              title.className = "event-title";
+              title.textContent = ev.year + " · " + ev.title;
+              const meta = document.createElement("div");
+              meta.className = "event-meta";
+              meta.textContent = readLabel(ev);
+              body.appendChild(title);
+              body.appendChild(meta);
+              row.appendChild(cur);
+              row.appendChild(body);
+              row.addEventListener("click", function () {
+                ui.focus = "list";
+                ui.listIndex = i;
+                playSfx("select");
+                Game.selectEvent(ev.id);
+                refreshTrial();
+                setStage("사건 선택 · " + ev.title, ev.summary || "선택 시 해당 사건을 조회할 수 있습니다.");
+              });
+              list.appendChild(row);
+            });
+            // keep selection synced
+            if (events[ui.listIndex]) Game.selectEvent(events[ui.listIndex].id);
+            return;
+          }
+
+          if (ui.tab === "detail") {
+            document.getElementById("leftHint").textContent = "SCROLL";
+            const div = document.createElement("div");
+            div.className = "detail-body";
+            const name = s.nameRevealed ? s.trueName : s.displayName;
+            const vals = (s.values || []).join(", ") || "-";
+            const life =
+              s.birthYear != null || s.deathYear != null
+                ? "생애: " +
+                  (s.birthYear != null ? s.birthYear : "????") +
+                  " – " +
+                  (s.deathYear != null ? s.deathYear : "????") +
+                  (s.ageAtDeath != null ? " (" + s.ageAtDeath + "세)" : "")
+                : s.deathYear != null
+                  ? "사망연도: " + s.deathYear
+                  : "생애: ???";
+            div.textContent =
+              "이름: " + name + "\n" +
+              "성별: " + (s.gender || "???") + "\n" +
+              life + "\n" +
+              "가치관: " + vals + "\n\n" +
+              (s.profileNote || "");
+            list.appendChild(div);
+            return;
+          }
+
+          document.getElementById("leftHint").textContent = "SELECT";
+          ui.listIndex = Math.max(0, Math.min(ui.listIndex, menuItems.length - 1));
+          menuItems.forEach(function (item, i) {
+            const row = document.createElement("div");
+            row.className = "menu-row" + (i === ui.listIndex && ui.focus === "list" ? " selected" : "");
+            const cur = document.createElement("span");
+            cur.className = "cursor";
+            cur.textContent = i === ui.listIndex ? "▶" : "";
+            const lab = document.createElement("div");
+            lab.textContent = item.label;
+            row.appendChild(cur);
+            row.appendChild(lab);
+            row.addEventListener("click", function () {
+              ui.focus = "list";
+              ui.listIndex = i;
+              playSfx("select");
+              confirmMenu();
+            });
+            list.appendChild(row);
+          });
+        }
+
+        function renderActions() {
+          const fact = document.getElementById("btnFact");
+          const emo = document.getElementById("btnEmotion");
+          fact.disabled = !Game.canInvestigateFact();
+          emo.disabled = !Game.canInvestigateEmotion();
+          fact.classList.toggle("selected", ui.focus === "actions" && ui.actionIndex === 0);
+          emo.classList.toggle("selected", ui.focus === "actions" && ui.actionIndex === 1);
+        }
+
+        function updateGuide() {
+          const s = Game.state;
+          const ev = Game.getSelectedEvent();
+          let g = "재판 시작";
+          if (ev) g = ev.year + " · " + ev.title;
+          if ((s.courtTimeMinutes || 0) <= 0) g = "법정시간 소진 — 판결을 고려하십시오";
+          document.getElementById("statusGuide").textContent = g;
+        }
+
+        function updateDesc() {
+          const ev = Game.getSelectedEvent();
+          const box = document.getElementById("descBox");
+          if (!ev) {
+            box.textContent = "사건을 선택하십시오.";
+            return;
+          }
+          let t = ev.summary || "";
+          if (ev.factRead) t += (t ? "\n\n" : "") + "[사실]\n" + ev.factText;
+          if (ev.emotionRead) t += (t ? "\n\n" : "") + "[감정]\n" + ev.emotionText;
+          if (!ev.factRead) t += (t ? "\n\n" : "") + "아직 사실을 조사하지 않았습니다.";
+          else if (!ev.emotionRead) t += "\n\n감정은 아직 들여다보지 않았습니다.";
+          box.textContent = t;
+        }
+
+        function doFact() {
+          if (ui.busy) return;
+          const r = Game.investigateFact();
+          if (!r.ok) {
+            const L = Game.labels();
+            if (r.reason === "no_time") toast(L.timeExpired || "시간이 부족합니다.");
+            else if (r.reason === "already") toast("이미 조사한 사실입니다.");
+            else playSfx("select");
+            refreshTrial();
+            return;
+          }
+          playSfx("confirm");
+          setStage("사실 조사", r.text + (r.nameRevealed ? "\n\n정체가 드러났다: " + Game.state.displayName : ""));
+          refreshTrial();
+        }
+
+        function doEmotion() {
+          if (ui.busy) return;
+          const L = Game.labels();
+          const r = Game.investigateEmotion();
+          if (!r.ok) {
+            if (r.reason === "need_fact") toast(L.needFactFirst);
+            else if (r.reason === "no_spirit") toast(L.spiritLow);
+            else if (r.reason === "no_time") toast(L.timeExpired);
+            else if (r.reason === "already") toast("이미 들여다본 감정입니다.");
+            refreshTrial();
+            return;
+          }
+          playSfx("confirm");
+          setStage("감정 열람", r.text);
+          refreshTrial();
+        }
+
+        function confirmMenu() {
+          playSfx("confirm");
+          const item = menuItems[ui.listIndex];
+          if (!item) return;
+          if (item.id === "verdict") openVerdict();
+          else if (item.id === "lobby") {
+            Game.finishToLobby();
+            showScreen("lobby");
+            renderLobby();
+          } else if (item.id === "title") {
+            BGM.stop();
+            showScreen("title");
+            renderTitle();
+          }
+        }
+
+        let verdictChoice = "hell";
+
+        function renderVerdictChoices() {
+          document.querySelectorAll(".verdict-choice").forEach(function (btn) {
+            const on = btn.getAttribute("data-choice") === verdictChoice;
+            btn.classList.toggle("selected", on);
+          });
+        }
+
+        function openVerdict() {
+          playSfx("confirm");
+          const opened = Game.openVerdict();
+          verdictChoice = "hell";
+          document.getElementById("verdictReason").value = "";
+          const warn = document.getElementById("verdictWarn");
+          warn.hidden = !(opened && opened.rushed);
+          warn.textContent = Game.labels().karmaWarn || "";
+          renderVerdictChoices();
+          showScreen("verdict");
+        }
+
+        function submitVerdict() {
+          const reason = document.getElementById("verdictReason").value || "";
+          playSfx("confirm");
+          const r = Game.submitVerdict(verdictChoice, reason);
+          if (!r.ok) return;
+          const L = Game.labels();
+          const art = Game.contentArt();
+          const end = document.getElementById("screen-end");
+          if (verdictChoice === "heaven" && art.verdictInnocent) {
+            end.style.backgroundImage = 'url("' + art.verdictInnocent + '")';
+            BGM.play("heaven");
+          } else if (art.verdictGuilty) {
+            end.style.backgroundImage = 'url("' + art.verdictGuilty + '")';
+            BGM.play("hell");
+          } else {
+            end.style.backgroundImage = "";
+          }
+          document.getElementById("endTitle").textContent =
+            verdictChoice === "heaven" ? L.heaven : L.hell;
+          document.getElementById("endSub").textContent = r.summary.rushed
+            ? L.karmaEnd || ""
+            : r.summary.deceasedName + "에 대한 판결이 내려졌다.";
+          ui.endIndex = 0;
+          renderEndMenu();
+          showScreen("end");
+        }
+
+        function renderEndMenu() {
+          const canTrial = Game.canStartTrial();
+          endMenuItems[0] = canTrial
+            ? { id: "next", label: "다음 재판하기" }
+            : { id: "lobby", label: "로비로 (하루 회복 필요)" };
+          endMenuItems[1] = { id: "title", label: "심판종료" };
+          const buttons = document.querySelectorAll("#endMenu .end-menu-item");
+          buttons.forEach(function (btn, i) {
+            btn.classList.toggle("selected", i === ui.endIndex);
+            if (endMenuItems[i]) {
+              btn.textContent = endMenuItems[i].label;
+              btn.setAttribute("data-end", endMenuItems[i].id);
+            }
+          });
+        }
+
+        function confirmEnd() {
+          playSfx("confirm");
+          const item = endMenuItems[ui.endIndex];
+          if (!item) return;
+          if (item.id === "title") {
+            Game.finishToLobby();
+            BGM.stop();
+            showScreen("title");
+            renderTitle();
+            return;
+          }
+          // 다음 재판 / 로비 → 로비 진입 (시간 0이면 재판 불가, 하루 마치기 유도)
+          Game.finishToLobby();
+          showScreen("lobby");
+          renderLobby();
+          BGM.play("court");
+          if (!Game.canStartTrial()) {
+            toast(Game.labels().timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
+          }
+        }
+
+        document.querySelectorAll(".verdict-choice").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            verdictChoice = btn.getAttribute("data-choice");
+            playSfx("select");
+            renderVerdictChoices();
+          });
+        });
+        document.getElementById("verdictSubmit").addEventListener("click", function () {
+          submitVerdict();
+        });
+        document.querySelectorAll("#endMenu .end-menu-item").forEach(function (btn, i) {
+          btn.addEventListener("click", function () {
+            ui.endIndex = i;
+            playSfx("select");
+            renderEndMenu();
+            confirmEnd();
+          });
+        });
+
+        const TAB_ORDER = ["events", "detail", "menu"];
+
+        function setTab(name, opts) {
+          const o = opts || {};
+          if (TAB_ORDER.indexOf(name) < 0) return;
+          ui.tab = name;
+          ui.listIndex = 0;
+          ui.focus = "list";
+          if (!o.silent) playSfx("select");
+          refreshTrial();
+        }
+
+        function cycleTab(dir) {
+          const i = TAB_ORDER.indexOf(ui.tab);
+          const next = TAB_ORDER[(i + dir + TAB_ORDER.length) % TAB_ORDER.length];
+          setTab(next);
+        }
+
+        document.querySelectorAll("#leftTabs .tab").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setTab(btn.getAttribute("data-tab"));
+          });
+        });
+        document.getElementById("btnFact").addEventListener("click", function () {
+          ui.focus = "actions";
+          ui.actionIndex = 0;
+          doFact();
+        });
+        document.getElementById("btnEmotion").addEventListener("click", function () {
+          ui.focus = "actions";
+          ui.actionIndex = 1;
+          doEmotion();
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (ui.screen === "title") {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.titleIndex = (ui.titleIndex + (e.key === "ArrowDown" ? 1 : -1) + titleItems.length) % titleItems.length;
+              playSfx("select");
+              renderTitle();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              confirmTitle();
+            }
+            return;
+          }
+          if (ui.screen === "lobby") {
+            const n = (ui._lobbyActions || []).length;
+            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+              e.preventDefault();
+              ui.lobbyIndex = (ui.lobbyIndex + (e.key === "ArrowRight" ? 1 : -1) + n) % n;
+              playSfx("select");
+              renderLobby();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              confirmLobby();
+            }
+            return;
+          }
+          if (ui.screen === "verdict") {
+            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+              e.preventDefault();
+              verdictChoice = verdictChoice === "hell" ? "heaven" : "hell";
+              playSfx("select");
+              renderVerdictChoices();
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              submitVerdict();
+            }
+            return;
+          }
+          if (ui.screen === "end") {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.endIndex =
+                (ui.endIndex + (e.key === "ArrowDown" ? 1 : -1) + endMenuItems.length) %
+                endMenuItems.length;
+              playSfx("select");
+              renderEndMenu();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              confirmEnd();
+            }
+            return;
+          }
+          if (ui.screen !== "ingame" || !Game.state || Game.state.phase !== "trial") return;
+
+          if (e.key === "Tab") {
+            e.preventDefault();
+            cycleTab(e.shiftKey ? -1 : 1);
+            return;
+          }
+
+          if (ui.focus === "actions") {
+            if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              ui.focus = "list";
+              playSfx("select");
+              refreshTrial();
+              return;
+            }
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.actionIndex = ui.actionIndex === 0 ? 1 : 0;
+              playSfx("select");
+              renderActions();
+              return;
+            }
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (ui.actionIndex === 0) doFact();
+              else doEmotion();
+            }
+            return;
+          }
+
+          // left panel focus: ←→ switch tabs (메뉴에서 → 는 액션으로)
+          if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            cycleTab(-1);
+            return;
+          }
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            if (ui.tab === "menu") {
+              ui.focus = "actions";
+              playSfx("select");
+              refreshTrial();
             } else {
-              this.started = true;
+              cycleTab(1);
             }
-          },
-          setEnabled(on) {
-            if (!window.GAME_CONFIG) return;
-            if (!window.GAME_CONFIG.systems) window.GAME_CONFIG.systems = {};
-            if (!window.GAME_CONFIG.systems.bgm) window.GAME_CONFIG.systems.bgm = {};
-            window.GAME_CONFIG.systems.bgm.enabled = !!on;
-            if (on) {
-              this.playTrack(this.track || "court");
-            } else if (this.audio) {
-              this.audio.pause();
+            return;
+          }
+
+          if (ui.tab === "events") {
+            const n = (Game.state.events || []).length;
+            if (!n) return;
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.listIndex = (ui.listIndex + (e.key === "ArrowDown" ? 1 : -1) + n) % n;
+              playSfx("select");
+              const ev = Game.state.events[ui.listIndex];
+              if (ev) {
+                Game.selectEvent(ev.id);
+                setStage("사건 선택 · " + ev.title, ev.summary || "");
+              }
+              refreshTrial();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              ui.focus = "actions";
+              playSfx("select");
+              refreshTrial();
             }
-          },
-          toggle() {
-            this.setEnabled(!this.enabled());
-          },
-          start() {
-            this.playTrack("court");
-          },
-        };
-
-        const UiSfx = {
-          enabled(key) {
-            const systems = window.GAME_CONFIG && window.GAME_CONFIG.systems;
-            if (!systems || !systems[key]) return true;
-            return systems[key].enabled !== false;
-          },
-          volume(kind) {
-            const base =
-              (window.GAME_CONFIG && window.GAME_CONFIG.balance && window.GAME_CONFIG.balance.sfxVolume) != null
-                ? window.GAME_CONFIG.balance.sfxVolume
-                : 0.55;
-            // 확정음은 이동음보다 조금 크게
-            return kind === "confirm" ? Math.min(1, base * 1.15) : base;
-          },
-          path(kind) {
-            const audio = window.GAME_CONTENT && window.GAME_CONTENT.audio;
-            if (kind === "confirm") {
-              return (audio && audio.uiConfirm) || "assets/audio/ui_confirm.mp3";
+          } else if (ui.tab === "menu") {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.listIndex = (ui.listIndex + (e.key === "ArrowDown" ? 1 : -1) + menuItems.length) % menuItems.length;
+              playSfx("select");
+              renderLeftList();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              confirmMenu();
             }
-            return (audio && audio.uiSelect) || "assets/audio/ui_select.wav";
-          },
-          play(kind) {
-            const sysKey = kind === "confirm" ? "uiConfirmSfx" : "uiSelectSfx";
-            if (!this.enabled(sysKey)) return;
-            try {
-              const a = new Audio(this.path(kind));
-              a.volume = this.volume(kind);
-              a.play().catch(function () {});
-            } catch (err) {}
-          },
-        };
-
-        function playUiSelect() {
-          // 커서 이동 전용
-          UiSfx.play("select");
-        }
-
-        function playUiConfirm() {
-          // Enter / 클릭 확정 전용
-          UiSfx.play("confirm");
-        }
+          }
+        });
 
         applyArt();
-        renderTitleMenu();
-        console.info("[지옥법정] MVP boot", {
+        renderTitle();
+        console.info("[지옥법정] revision MVP boot", {
           config: window.GAME_CONFIG && window.GAME_CONFIG.version,
           content: window.GAME_CONTENT && window.GAME_CONTENT.version,
-          bgm: window.GAME_CONTENT && window.GAME_CONTENT.audio && window.GAME_CONTENT.audio.bgm,
-          bgmHeaven: window.GAME_CONTENT && window.GAME_CONTENT.audio && window.GAME_CONTENT.audio.bgmHeaven,
-          bgmHell: window.GAME_CONTENT && window.GAME_CONTENT.audio && window.GAME_CONTENT.audio.bgmHell,
-          uiSelect: window.GAME_CONTENT && window.GAME_CONTENT.audio && window.GAME_CONTENT.audio.uiSelect,
-          uiConfirm: window.GAME_CONTENT && window.GAME_CONTENT.audio && window.GAME_CONTENT.audio.uiConfirm,
         });
       })();
     </script>

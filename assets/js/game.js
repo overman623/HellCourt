@@ -1,1265 +1,649 @@
 (function () {
   /*
-   * 지옥법정 MVP — 게임 코어
-   * 각 시스템은 GAME_CONFIG.systems.*.enabled 로 독립 토글
+   * 지옥법정 — 개정 룰 MVP 코어
+   * 타임라인 공개 → 사실 열람(분) → 감정 질문(분+영력) → 천국/지옥 → 로비
+   * 법정시간: 하루 풀(분), 같은 날 재판 간 유지 / 날짜 변경 시만 회복
+   * 영력: 자동 회복 없음 / 영기 재화로 로비에서 회복
    */
-  const Config = () => window.GAME_CONFIG || {};
-  const Content = () => window.GAME_CONTENT || {};
-  const sys = (id) => !!(Config().systems && Config().systems[id] && Config().systems[id].enabled);
-  const bal = () => Config().balance || {};
-  const labels = () => Config().labels || {};
+  "use strict";
 
-  function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
+  function Content() {
+    return window.GAME_CONTENT || {};
+  }
+  function Config() {
+    return window.GAME_CONFIG || {};
+  }
+  function bal() {
+    return Config().balance || {};
+  }
+  function labels() {
+    return Config().labels || {};
+  }
+  function sys(name) {
+    const s = (Config().systems || {})[name];
+    return !s || s.enabled !== false;
+  }
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+  function soulList() {
+    const c = Content();
+    if (c.souls && c.souls.length) return c.souls;
+    return c.cases || [];
+  }
+  function caseCount() {
+    return soulList().length;
+  }
+  function resolveCase(caseIndex) {
+    const cases = soulList();
+    if (!cases.length) return { pack: null, index: 0 };
+    const i = ((caseIndex % cases.length) + cases.length) % cases.length;
+    return { pack: cases[i], index: i };
   }
 
-  function chanceTable(table, value) {
-    if (!table || !table.length) return 0.5;
-    const i = clamp(value | 0, 0, table.length - 1);
-    return table[i];
-  }
-
-  function shuffle(arr, rng) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      const t = a[i];
-      a[i] = a[j];
-      a[j] = t;
-    }
-    return a;
-  }
-
-  // ---------- Playtest Log ----------
-  const Log = {
-    enabled() {
-      return sys("playtestLog");
-    },
-    entries: [],
-    session: null,
-    push(type, payload) {
-      if (!this.enabled()) return;
-      const row = { t: Date.now(), type: type, payload: payload || {} };
-      this.entries.push(row);
-      console.info("[HellCourt:log]", type, payload);
-    },
-    startSession(caseId) {
-      this.entries = [];
-      this.session = {
-        startedAt: Date.now(),
-        caseId: caseId,
-        verdictEnteredAt: null,
-        verdictLeftAt: null,
+  /** 신규 soul 스키마 / 구 cases 스키마 모두 런타임 상태로 정규화 */
+  function normalizeSoulPack(pack) {
+    if (!pack) return null;
+    // 구 포맷: { deceased, events with factText }
+    if (pack.deceased) {
+      return {
+        id: pack.id,
+        name: pack.deceased.trueName || "???",
+        birthYear: pack.deceased.birthYear || null,
+        deathYear: pack.deceased.deathYear || null,
+        ageAtDeath: pack.deceased.ageAtDeath || null,
+        gender: pack.deceased.gender || "",
+        summary: pack.deceased.profileNote || pack.deceased.summary || "",
+        intro: pack.deceased.intro || "",
+        values: (pack.deceased.values || []).slice(),
+        coreConflictKeywords: (pack.deceased.coreConflictKeywords || []).slice(),
+        identityEventId: pack.identityEventId || null,
+        events: (pack.events || []).map(function (ev) {
+          return {
+            id: ev.id,
+            year: ev.year,
+            age: ev.age != null ? ev.age : null,
+            title: ev.title,
+            summary: ev.summary || "",
+            factText: ev.factText || (ev.fact && ev.fact.text) || "",
+            emotionText: ev.emotionText || (ev.emotion && ev.emotion.text) || "",
+            factKeywords: (ev.factKeywords || (ev.fact && ev.fact.keywords) || []).slice(),
+            emotionKeywords: (ev.emotionKeywords || (ev.emotion && ev.emotion.keywords) || []).slice(),
+            revealsIdentity: !!ev.revealsIdentity || ev.id === pack.identityEventId,
+          };
+        }),
       };
-      this.push("session_start", { caseId: caseId });
+    }
+    // 신 포맷: soul 루트
+    return {
+      id: pack.id,
+      name: pack.name || "???",
+      birthYear: pack.birthYear != null ? pack.birthYear : null,
+      deathYear: pack.deathYear != null ? pack.deathYear : null,
+      ageAtDeath: pack.ageAtDeath != null ? pack.ageAtDeath : null,
+      gender: pack.gender || "",
+      summary: pack.summary || "",
+      intro: pack.intro || pack.summary || "",
+      values: (pack.values || []).slice(),
+      coreConflictKeywords: (pack.coreConflictKeywords || []).slice(),
+      identityEventId: pack.identityEventId || null,
+      events: (pack.events || []).map(function (ev) {
+        const fact = ev.fact || {};
+        const emotion = ev.emotion || {};
+        return {
+          id: ev.id,
+          year: ev.year,
+          age: ev.age != null ? ev.age : null,
+          title: ev.title,
+          summary: ev.summary || "",
+          factText: fact.text || ev.factText || "",
+          emotionText: emotion.text || ev.emotionText || "",
+          factKeywords: (fact.keywords || ev.factKeywords || []).slice(),
+          emotionKeywords: (emotion.keywords || ev.emotionKeywords || []).slice(),
+          revealsIdentity: !!ev.revealsIdentity || ev.id === pack.identityEventId,
+        };
+      }),
+    };
+  }
+
+  function courtCfg() {
+    return bal().courtTime || {};
+  }
+  function spiritCfg() {
+    return bal().spirit || {};
+  }
+  function maxCourtMinutes() {
+    const ct = courtCfg();
+    if (ct.maxMinutes != null) return ct.maxMinutes;
+    const hours = ct.hoursPerDay != null ? ct.hoursPerDay : 8;
+    return hours * 60;
+  }
+  function startCourtMinutes() {
+    const ct = courtCfg();
+    if (ct.startMinutes != null) return ct.startMinutes;
+    return maxCourtMinutes();
+  }
+  function hoursPerDay() {
+    const ct = courtCfg();
+    return ct.hoursPerDay != null ? ct.hoursPerDay : Math.round(maxCourtMinutes() / 60);
+  }
+
+  /** 분 → "H:MM" / 표시용 */
+  function formatMinutes(total) {
+    const m = Math.max(0, Math.floor(total || 0));
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return h + ":" + (mm < 10 ? "0" : "") + mm;
+  }
+
+  // ---------- Log ----------
+  const Log = {
+    session: null,
+    startSession(caseId) {
+      this.session = {
+        startedAt: new Date().toISOString(),
+        caseId: caseId || null,
+        events: [],
+      };
     },
-    enterVerdict() {
-      if (this.session) this.session.verdictEnteredAt = Date.now();
-      this.push("verdict_enter", {});
-    },
-    finishVerdict(choice, reason) {
-      if (this.session) this.session.verdictLeftAt = Date.now();
-      const dwell =
-        this.session && this.session.verdictEnteredAt
-          ? (this.session.verdictLeftAt || Date.now()) - this.session.verdictEnteredAt
-          : null;
-      this.push("verdict_choice", { choice: choice, reason: reason, dwellMs: dwell });
-    },
-    exportJSON() {
-      return JSON.stringify(
-        {
-          configVersion: Config().version,
-          contentVersion: Content().version,
-          session: this.session,
-          entries: this.entries,
-        },
-        null,
-        2
-      );
+    push(type, data) {
+      if (!sys("playtestLog") || !this.session) return;
+      this.session.events.push({
+        t: Date.now(),
+        type: type,
+        data: data || null,
+      });
     },
     download() {
-      if (!this.enabled()) return;
-      const blob = new Blob([this.exportJSON()], { type: "application/json" });
+      if (!this.session) return;
+      const blob = new Blob([JSON.stringify(this.session, null, 2)], {
+        type: "application/json",
+      });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "hellcourt-playtest-" + Date.now() + ".json";
+      a.download = "hellcourt-log-" + Date.now() + ".json";
       a.click();
       URL.revokeObjectURL(a.href);
     },
   };
 
-  // ---------- Stats ----------
-  const Stats = {
-    apply(state, trustDelta, stressDelta) {
-      const b = bal();
-      const t = b.trust || { min: 0, max: 10 };
-      const s = b.stress || { min: 0, max: 10 };
-      const before = { trust: state.trust, stress: state.stress };
-      state.trust = clamp(state.trust + (trustDelta || 0), t.min, t.max);
-      state.stress = clamp(state.stress + (stressDelta || 0), s.min, s.max);
-      Log.push("stat_change", {
-        before: before,
-        after: { trust: state.trust, stress: state.stress },
-        delta: { trust: trustDelta, stress: stressDelta },
-      });
-      return { trust: state.trust, stress: state.stress };
-    },
-    atMaxStress(state) {
-      const max = (bal().stress && bal().stress.max) || 10;
-      return state.stress >= max;
-    },
-  };
-
-  // ---------- Stress guard (high-stress dampen + relief draw) ----------
-  const StressGuard = {
-    dampenFrom() {
-      const s = bal().stress || {};
-      return s.dampenFrom != null ? s.dampenFrom : 8;
-    },
-    maxPositiveDelta() {
-      const s = bal().stress || {};
-      return s.maxPositiveDelta != null ? s.maxPositiveDelta : 1;
-    },
-    // 현재 스트레스가 위험 구간이면 양의 증가만 상한
-    dampPositive(state, stressDelta) {
-      const d = stressDelta || 0;
-      if (d <= 0 || !state) return { stressDelta: d, dampened: false };
-      if (state.stress < this.dampenFrom()) return { stressDelta: d, dampened: false };
-      const cap = this.maxPositiveDelta();
-      if (d <= cap) return { stressDelta: d, dampened: false };
-      return { stressDelta: cap, dampened: true, before: d };
-    },
-    isReliefCard(card) {
-      return !!(card && (card.stressDelta || 0) < 0);
-    },
-    handHasRelief(state) {
-      if (!state || !state.hand) return false;
-      for (let i = 0; i < state.hand.length; i++) {
-        if (this.isReliefCard(Hand.cardById(state.hand[i]))) return true;
-      }
-      return false;
-    },
-    needsRelief(state) {
-      return !!(state && state.stress >= this.dampenFrom() && !this.handHasRelief(state));
-    },
-  };
-
-  // ---------- Unlock rolls ----------
-  const Unlock = {
-    chance(state, type) {
-      const b = bal();
-      if (type === "FACT") {
-        if (!sys("trustUnlock")) return 1;
-        let p = chanceTable(b.factUnlockChanceByTrust, state.trust);
-        if (b.failStreakBonus && b.failStreakBonus.enabled) {
-          p = Math.min(1, p + Math.min(b.failStreakBonus.maxBonus, state.failStreakFact * b.failStreakBonus.perFail));
-        }
-        return p;
-      }
-      if (type === "EMOTION") {
-        if (!sys("emotionUnlock")) return 1;
-        let p = chanceTable(b.emotionUnlockChanceByStress, state.stress);
-        if (b.failStreakBonus && b.failStreakBonus.enabled) {
-          p = Math.min(
-            1,
-            p + Math.min(b.failStreakBonus.maxBonus, state.failStreakEmotion * b.failStreakBonus.perFail)
-          );
-        }
-        return p;
-      }
-      return 0;
-    },
-    roll(state, type, rng) {
-      const p = this.chance(state, type);
-      const r = rng();
-      const success = r < p;
-      Log.push("unlock_roll", { type: type, p: p, roll: r, success: success });
-      if (type === "FACT") state.failStreakFact = success ? 0 : state.failStreakFact + 1;
-      if (type === "EMOTION") state.failStreakEmotion = success ? 0 : state.failStreakEmotion + 1;
-      return { success: success, p: p, roll: r };
-    },
-  };
-
-  // ---------- Events / info ----------
+  // ---------- Events ----------
   const Events = {
-    find(state, id) {
-      return state.events.find(function (e) {
-        return e.id === id;
+    find(state, eventId) {
+      return (state.events || []).find(function (e) {
+        return e.id === eventId;
       });
     },
     selected(state) {
       return this.find(state, state.selectedEventId);
     },
-    nextHidden(list) {
-      for (let i = 0; i < list.length; i++) {
-        if (!list[i].revealed) return list[i];
-      }
-      return null;
-    },
-    allRevealed(list) {
-      return list.every(function (x) {
-        return x.revealed;
+    countRead(state) {
+      let facts = 0;
+      let emotions = 0;
+      (state.events || []).forEach(function (e) {
+        if (e.factRead) facts++;
+        if (e.emotionRead) emotions++;
       });
-    },
-    listOf(state, kind) {
-      const ev = this.selected(state);
-      if (!ev) return [];
-      return kind === "FACT" ? ev.facts || [] : ev.emotions || [];
-    },
-    hiddenChoices(state, kind) {
-      return this.listOf(state, kind).filter(function (x) {
-        return x && !x.revealed;
-      });
-    },
-    applyRevealSideEffects(state, kind, info, result, options) {
-      options = options || {};
-      if (options.deceit) return; // 거짓 해금은 이름/사건 연쇄 없음
-
-      if (kind === "EMOTION" && info.unlocksEventId && sys("eventLinkFromEmotion")) {
-        const linked = this.find(state, info.unlocksEventId);
-        if (linked && !linked.unlocked) {
-          linked.unlocked = true;
-          result.unlockedEventId = linked.id;
-          Log.push("event_unlocked", { eventId: linked.id, fromEmotionId: info.id });
-        }
-      }
-
-      if (kind === "FACT" && sys("identityReveal") && info.id === state.identityFactId) {
-        state.nameRevealed = true;
-        state.displayName = state.trueName;
-        state.courtName = "공정의 법정";
-        result.nameRevealed = true;
-        Log.push("name_revealed", { name: state.trueName, fromFactId: info.id });
-      }
-    },
-    revealById(state, kind, infoId, options) {
-      options = options || {};
-      const deceit = !!options.deceit;
-      const ev = this.selected(state);
-      if (!ev) return { ok: false, reason: "no_event" };
-      const list = this.listOf(state, kind);
-      const info = list.find(function (x) {
-        return x.id === infoId;
-      });
-      if (!info) return { ok: false, reason: "no_info" };
-      if (info.revealed) return { ok: false, reason: "already", info: info, event: ev };
-
-      if (deceit && kind === "FACT") {
-        // 비가역: 진짜 내용은 봉인하고 공용 거짓 풀에서 덮어씀
-        info.trueKeyword = info.keyword;
-        info.trueText = info.text;
-        const lie = drawFalseFact(state);
-        info.keyword = (lie && lie.keyword) || info.keyword;
-        info.text =
-          (lie && lie.text) ||
-          "그 기억은 법정에 맞춰 다시 쓰인 것이다. 그는 그렇게 말하기로 했다.";
-        info.isFalse = true;
-      }
-
-      info.revealed = true;
-      Log.push("info_revealed", {
-        eventId: ev.id,
-        kind: kind,
-        infoId: info.id,
-        text: info.text,
-        chosen: true,
-        deceit: deceit,
-        isFalse: !!info.isFalse,
-      });
-
-      const result = {
-        ok: true,
-        event: ev,
-        info: info,
-        kind: kind,
-        unlockedEventId: null,
-        nameRevealed: false,
-        deceit: deceit,
-        isFalse: !!info.isFalse,
-      };
-      this.applyRevealSideEffects(state, kind, info, result, { deceit: deceit });
-      return result;
-    },
-    // 선택 사건의 해당 속성 미해금 키워드를 전부 공개 (실패 붕괴용)
-    // 신뢰 MAX 거짓 모드는 일괄 해금에 쓰지 않음(진짜 붕괴만)
-    revealAllHidden(state, kind) {
-      const hidden = this.hiddenChoices(state, kind);
-      if (!hidden.length) return { ok: false, reason: "none", kind: kind, reveals: [], count: 0 };
-
-      const reveals = [];
-      const unlockedEventIds = [];
-      let nameRevealed = false;
-      for (let i = 0; i < hidden.length; i++) {
-        const r = this.revealById(state, kind, hidden[i].id);
-        if (!r.ok) continue;
-        reveals.push(r);
-        if (r.unlockedEventId) unlockedEventIds.push(r.unlockedEventId);
-        if (r.nameRevealed) nameRevealed = true;
-      }
-      Log.push("fail_collapse_reveal", {
-        kind: kind,
-        eventId: state.selectedEventId,
-        count: reveals.length,
-        unlockedEventIds: unlockedEventIds,
-        nameRevealed: nameRevealed,
-      });
-      return {
-        ok: reveals.length > 0,
-        kind: kind,
-        reveals: reveals,
-        count: reveals.length,
-        unlockedEventIds: unlockedEventIds,
-        nameRevealed: nameRevealed,
-        event: this.selected(state),
-      };
-    },
-    revealNext(state, kind) {
-      const next = this.nextHidden(this.listOf(state, kind));
-      if (!next) {
-        const ev = this.selected(state);
-        return { ok: false, reason: "complete", event: ev };
-      }
-      return this.revealById(state, kind, next.id);
-    },
-    // 선택 사건의 숨은 키워드 중 무작위로 count개 공개 (카드 보너스 효과용)
-    revealRandom(state, kind, rng, count) {
-      count = count != null ? count : 1;
-      const reveals = [];
-      for (let i = 0; i < count; i++) {
-        const hidden = this.hiddenChoices(state, kind);
-        if (!hidden.length) break;
-        const pick = hidden[Math.floor((rng || Math.random)() * hidden.length)];
-        const r = this.revealById(state, kind, pick.id);
-        if (r.ok) reveals.push(r);
-      }
-      return reveals;
-    },
-    // id로 숨은 키워드 찾기 (선택 사건 우선, 없으면 해금된 사건)
-    findHiddenById(state, infoId) {
-      if (!infoId) return null;
-      const tryList = function (ev, kind) {
-        const list = kind === "FACT" ? ev.facts || [] : ev.emotions || [];
-        const info = list.find(function (x) {
-          return x && x.id === infoId && !x.revealed;
-        });
-        return info ? { event: ev, kind: kind, info: info } : null;
-      };
-      const selected = this.selected(state);
-      if (selected) {
-        const a = tryList(selected, "FACT") || tryList(selected, "EMOTION");
-        if (a) return a;
-      }
-      const events = state.events || [];
-      for (let i = 0; i < events.length; i++) {
-        const ev = events[i];
-        if (!ev || !ev.unlocked) continue;
-        if (selected && ev.id === selected.id) continue;
-        const hit = tryList(ev, "FACT") || tryList(ev, "EMOTION");
-        if (hit) return hit;
-      }
-      return null;
-    },
-    findHiddenByKeyword(state, keyword) {
-      if (!keyword) return null;
-      const ev = this.selected(state);
-      if (!ev) return null;
-      const scan = function (kind) {
-        const list = kind === "FACT" ? ev.facts || [] : ev.emotions || [];
-        const info = list.find(function (x) {
-          return x && !x.revealed && x.keyword === keyword;
-        });
-        return info ? { event: ev, kind: kind, info: info } : null;
-      };
-      return scan("FACT") || scan("EMOTION");
-    },
-    findIdentityHidden(state) {
-      const id = state.identityFactId;
-      if (!id) return null;
-      const hit = this.findHiddenById(state, id);
-      if (!hit || hit.kind !== "FACT") return null;
-      return hit;
-    },
-    // 선택 사건에서 다음 사건을 여는 숨은 감정 (미해금 사건 링크 우선)
-    findEventLinkHidden(state, rng) {
-      const hidden = this.hiddenChoices(state, "EMOTION").filter(function (x) {
-        return !!x.unlocksEventId;
-      });
-      if (!hidden.length) return null;
-      const self = this;
-      const useful = hidden.filter(function (x) {
-        const linked = self.find(state, x.unlocksEventId);
-        return linked && !linked.unlocked;
-      });
-      const pool = useful.length ? useful : hidden;
-      const pick = pool[Math.floor((rng || Math.random)() * pool.length)];
-      return pick ? { event: this.selected(state), kind: "EMOTION", info: pick } : null;
-    },
-    revealAt(state, hit) {
-      if (!hit || !hit.info) return { ok: false, reason: "no_hit" };
-      const prev = state.selectedEventId;
-      if (hit.event && hit.event.id !== prev) {
-        state.selectedEventId = hit.event.id;
-      }
-      const r = this.revealById(state, hit.kind, hit.info.id);
-      if (hit.event && hit.event.id !== prev) {
-        state.selectedEventId = prev;
-      }
-      return r;
+      return { facts: facts, emotions: emotions, total: (state.events || []).length };
     },
   };
 
-  // ---------- Card special effects ----------
-  const CardEffect = {
-    hasReveal(effect) {
-      if (!effect) return false;
-      return !!(
-        effect.randomReveal ||
-        effect.revealTarget ||
-        effect.revealKeyword ||
-        (effect.revealIds && effect.revealIds.length)
-      );
-    },
-    hasAny(effect) {
-      if (!effect) return false;
-      return this.hasReveal(effect) || !!(effect.noStatIncrease && effect.noStatIncrease.chance);
-    },
-    // 상승분(양수) 스탯을 일정 확률로 0으로 — 감소/완화는 유지
-    applyStatMod(deltas, effect, rng) {
-      const out = {
-        trustDelta: deltas.trustDelta,
-        stressDelta: deltas.stressDelta,
-        noStatIncrease: false,
-        noStatIncreaseChance: 0,
-      };
-      const cfg = effect && effect.noStatIncrease;
-      if (!cfg) return out;
-      const chance = cfg.chance != null ? cfg.chance : 0;
-      out.noStatIncreaseChance = chance;
-      if (chance <= 0) return out;
-      if ((rng || Math.random)() >= chance) return out;
-
-      let changed = false;
-      if (out.trustDelta > 0) {
-        out.trustDelta = 0;
-        changed = true;
-      }
-      if (out.stressDelta > 0) {
-        out.stressDelta = 0;
-        changed = true;
-      }
-      out.noStatIncrease = changed;
-      return out;
-    },
-    apply(state, effect, rng) {
-      if (!effect || !this.hasReveal(effect)) return [];
-      const reveals = [];
-      const seen = {};
-
-      function pushReveal(r) {
-        if (!r || !r.ok || !r.info) return;
-        if (seen[r.info.id]) return;
-        seen[r.info.id] = true;
-        reveals.push(r);
-      }
-
-      if (effect.revealTarget === "identity") {
-        pushReveal(Events.revealAt(state, Events.findIdentityHidden(state)));
-      } else if (effect.revealTarget === "eventLink") {
-        pushReveal(Events.revealAt(state, Events.findEventLinkHidden(state, rng)));
-      }
-
-      if (effect.revealKeyword) {
-        pushReveal(Events.revealAt(state, Events.findHiddenByKeyword(state, effect.revealKeyword)));
-      }
-
-      if (effect.revealIds && effect.revealIds.length) {
-        for (let i = 0; i < effect.revealIds.length; i++) {
-          pushReveal(Events.revealAt(state, Events.findHiddenById(state, effect.revealIds[i])));
-        }
-      }
-
-      if (effect.randomReveal === "FACT" || effect.randomReveal === "EMOTION") {
-        const count = effect.count != null ? effect.count : 1;
-        const randoms = Events.revealRandom(state, effect.randomReveal, rng, count);
-        for (let j = 0; j < randoms.length; j++) pushReveal(randoms[j]);
-      }
-
-      if (reveals.length) {
-        Log.push("card_effect_reveal", {
-          effectId: effect.id || null,
-          revealTarget: effect.revealTarget || null,
-          revealKeyword: effect.revealKeyword || null,
-          count: reveals.length,
-          infoIds: reveals.map(function (r) {
-            return r.info && r.info.id;
-          }),
-          unlockedEventIds: reveals
-            .map(function (r) {
-              return r.unlockedEventId;
-            })
-            .filter(Boolean),
-        });
-      }
-      return reveals;
-    },
-    describe(effect) {
-      if (!effect) return [];
-      const lines = [];
-      if (effect.revealTarget === "identity") {
-        lines.push("특수 효과 — 신원 사실 해금");
-      } else if (effect.revealTarget === "eventLink") {
-        lines.push("특수 효과 — 다음 사건을 여는 감정 해금");
-      }
-      if (effect.revealKeyword) {
-        lines.push("특수 효과 — 키워드 「" + effect.revealKeyword + "」 해금");
-      }
-      if (effect.revealIds && effect.revealIds.length) {
-        lines.push("특수 효과 — 지정 정보 " + effect.revealIds.length + "개 해금");
-      }
-      if (effect.randomReveal === "FACT" || effect.randomReveal === "EMOTION") {
-        const kindLabel = effect.randomReveal === "FACT" ? "사실" : "감정";
-        const n = effect.count != null ? effect.count : 1;
-        lines.push("특수 효과 — " + kindLabel + " " + n + "개 추가 해금(무작위)");
-      }
-      if (effect.noStatIncrease && effect.noStatIncrease.chance > 0) {
-        lines.push(
-          "특수 효과 — " +
-            Math.round(effect.noStatIncrease.chance * 100) +
-            "% 확률로 스탯 상승 무효"
-        );
-      }
-      return lines;
-    },
-  };
-
-  // ---------- Hand / deck ----------
-  const Hand = {
-    cardById(id) {
-      const cards = Content().questionCards || [];
-      return cards.find(function (c) {
-        return c.id === id;
-      });
-    },
-    buildDeck(rng) {
-      const ids = (Content().questionCards || []).map(function (c) {
-        return c.id;
-      });
-      return shuffle(ids, rng);
-    },
-    drawOne(state, rng) {
-      if (!sys("handDraw") && state.hand.length) return null;
-      if (!state.deck.length) {
-        // TODO(스펙§13): 교체/재셔플 규칙 미확정 — 임시로 폐기 더미 재사용
-        state.deck = shuffle(state.discard.slice(), rng);
-        state.discard = [];
-        Log.push("deck_reshuffle", { size: state.deck.length });
-      }
-      if (!state.deck.length) return null;
-
-      let id = null;
-      let reliefPriority = false;
-      if (StressGuard.needsRelief(state)) {
-        const idx = state.deck.findIndex(function (cid) {
-          return StressGuard.isReliefCard(Hand.cardById(cid));
-        });
-        if (idx >= 0) {
-          id = state.deck.splice(idx, 1)[0];
-          reliefPriority = true;
-        }
-      }
-      if (!id) id = state.deck.shift();
-
-      state.hand.push(id);
-      Log.push("card_drawn", { cardId: id, reliefPriority: reliefPriority });
-      return id;
-    },
-    dealInitial(state, rng) {
-      const size = (bal().handSize || 5);
-      state.hand = [];
-      state.deck = this.buildDeck(rng);
-      state.discard = [];
-
-      if (sys("initialHandBalance")) {
-        const fact = state.deck.find(function (id) {
-          const c = Hand.cardById(id);
-          return c && c.type === "FACT";
-        });
-        const emotion = state.deck.find(function (id) {
-          const c = Hand.cardById(id);
-          return c && c.type === "EMOTION";
-        });
-        const pick = [];
-        if (fact) {
-          state.deck = state.deck.filter(function (id) {
-            return id !== fact;
-          });
-          pick.push(fact);
-        }
-        if (emotion) {
-          state.deck = state.deck.filter(function (id) {
-            return id !== emotion;
-          });
-          pick.push(emotion);
-        }
-        while (pick.length < size && state.deck.length) {
-          pick.push(state.deck.shift());
-        }
-        state.hand = pick;
-        Log.push("initial_hand", { hand: state.hand.slice(), balanced: true });
-        return;
-      }
-
-      for (let i = 0; i < size; i++) this.drawOne(state, rng);
-      Log.push("initial_hand", { hand: state.hand.slice(), balanced: false });
-    },
-    play(state, handIndex, rng, options) {
-      options = options || {};
-      if (handIndex < 0 || handIndex >= state.hand.length) return null;
-      const cardId = state.hand.splice(handIndex, 1)[0];
-      state.discard.push(cardId);
-      Log.push("card_played", { cardId: cardId, eventId: state.selectedEventId });
-      // 스탯 적용 후 드로우하려면 options.draw === false
-      if (sys("handDraw") && options.draw !== false) this.drawOne(state, rng);
-      return this.cardById(cardId);
-    },
-  };
-
-  // ---------- Values (card ↔ deceased resonance) ----------
-  const Values = {
-    matches(state, card) {
-      if (!state || !card || !card.value) return false;
-      const list = state.values || [];
-      return list.indexOf(card.value) >= 0;
-    },
-    // 0이 아닌 스탯 효과를 동일 방향으로 1씩 강화
-    amplify(delta) {
-      const d = delta || 0;
-      if (d === 0) return 0;
-      return d > 0 ? d + 1 : d - 1;
-    },
-    resolveDeltas(state, card) {
-      const baseTrust = card.trustDelta || 0;
-      const baseStress = card.stressDelta || 0;
-      const matched = this.matches(state, card);
-      let trustDelta = baseTrust;
-      let stressDelta = baseStress;
-      if (matched) {
-        trustDelta = this.amplify(baseTrust);
-        stressDelta = this.amplify(baseStress);
-      }
-      const damp = StressGuard.dampPositive(state, stressDelta);
-      return {
-        matched: matched,
-        value: card.value || null,
-        trustDelta: trustDelta,
-        stressDelta: damp.stressDelta,
-        stressDampened: damp.dampened,
-        stressBeforeDamp: damp.dampened ? damp.before : damp.stressDelta,
-      };
-    },
-  };
-
-  // ---------- Soul break ----------
-  const Soul = {
-    check(state) {
-      if (!sys("soulBreak")) return false;
-      if (state.soulBroken) return false;
-      if (!Stats.atMaxStress(state)) return false;
-      state.soulBroken = true;
-      state.phase = "verdict";
-      Log.push("soul_break", { trust: state.trust, stress: state.stress });
-      return true;
-    },
-  };
-
-  // ---------- Court time expiry ----------
-  const CourtTime = {
-    check(state) {
-      if (!sys("courtTimeGauge")) return false;
-      if (state.timeExpired) return false;
-      if (state.courtTime > 0) return false;
-      state.timeExpired = true;
-      state.phase = "verdict";
-      Log.push("court_time_expired", { trust: state.trust, stress: state.stress, courtTime: state.courtTime });
-      return true;
-    },
-  };
-
-  // ---------- Karma (UI-only rushed verdict) ----------
+  // ---------- Karma ----------
   const Karma = {
-    countRevealed(state) {
-      if (!state || !state.events) return 0;
-      let n = 0;
-      state.events.forEach(function (ev) {
-        (ev.facts || []).forEach(function (f) {
-          if (f.revealed) n++;
-        });
-        (ev.emotions || []).forEach(function (f) {
-          if (f.revealed) n++;
-        });
-      });
-      return n;
+    readRatio(state) {
+      const c = Events.countRead(state);
+      if (!c.total) return 1;
+      const slots = c.total * 2;
+      return (c.facts + c.emotions) / slots;
     },
-    minRequired() {
-      const k = bal().karma || {};
-      return k.minRevealedKeywords != null ? k.minRevealedKeywords : 3;
-    },
-    evaluate(state) {
-      const revealedCount = this.countRevealed(state);
-      const min = this.minRequired();
-      const enabled = sys("karmaUi");
-      const rushed = enabled && revealedCount < min;
-      return { rushed: rushed, revealedCount: revealedCount, min: min, enabled: enabled };
+    isRushed(state) {
+      if (!sys("karmaUi")) return false;
+      const min = (bal().karma && bal().karma.minReadRatio) != null ? bal().karma.minReadRatio : 0.35;
+      return this.readRatio(state) < min;
     },
   };
 
-  function interrogationLocked(state) {
-    return !!(state && (state.soulBroken || state.timeExpired));
-  }
+  function createState(caseIndex, meta) {
+    meta = meta || {};
+    const resolved = resolveCase(caseIndex);
+    const raw = resolved.pack;
+    if (!raw) throw new Error("no souls in GAME_CONTENT");
+    const pack = normalizeSoulPack(raw);
 
-  function trustMax() {
-    const t = bal().trust || {};
-    return t.max != null ? t.max : 10;
-  }
+    const sp = spiritCfg();
+    const rb = bal().rebirth || {};
+    const maxMin = maxCourtMinutes();
+    const courtMin = meta.courtTimeMinutes != null ? meta.courtTimeMinutes : startCourtMinutes();
+    const spirit = meta.spirit != null ? meta.spirit : sp.start != null ? sp.start : 10;
 
-  function isTrustDeceitActive(state) {
-    if (!state || !sys("trustDeceit")) return false;
-    return state.trust >= trustMax();
-  }
-
-  function drawFalseFact(state) {
-    if (!state) return null;
-    if (!state.falseFactDeck) state.falseFactDeck = [];
-    if (!state.falseFactDiscard) state.falseFactDiscard = [];
-    if (!state.falseFactDeck.length) {
-      if (!state.falseFactDiscard.length) {
-        const pool = (Content().falseFactPool || []).map(function (f) {
-          return { keyword: f.keyword, text: f.text };
-        });
-        state.falseFactDeck = shuffle(pool, state.rng || Math.random);
-      } else {
-        state.falseFactDeck = shuffle(state.falseFactDiscard.slice(), state.rng || Math.random);
-        state.falseFactDiscard = [];
-      }
-    }
-    if (!state.falseFactDeck.length) return null;
-    const lie = state.falseFactDeck.shift();
-    state.falseFactDiscard.push(lie);
-    return lie;
-  }
-
-  function caseCount() {
-    const c = Content();
-    if (c.cases && c.cases.length) return c.cases.length;
-    return 1;
-  }
-
-  function resolveCasePack(caseIndex) {
-    const c = Content();
-    if (c.cases && c.cases.length) {
-      const n = c.cases.length;
-      const i = ((caseIndex % n) + n) % n;
-      return { index: i, pack: c.cases[i] };
-    }
-    return {
-      index: 0,
-      pack: {
-        id: (c.deceased && c.deceased.id) || "legacy",
-        deceased: c.deceased || {},
-        identityFactId: c.identityFactId || null,
-        achievements: c.achievements || [],
-        events: c.events || [],
-      },
-    };
-  }
-
-  // ---------- Controller ----------
-  function createState(rng, caseIndex) {
-    const resolved = resolveCasePack(caseIndex == null ? 0 : caseIndex);
-    const pack = resolved.pack || {};
-    const b = bal();
-    const deceased = pack.deceased || {};
     const events = (pack.events || []).map(function (ev) {
       return {
         id: ev.id,
+        year: ev.year,
+        age: ev.age,
         title: ev.title,
         summary: ev.summary || "",
-        unlocked: !!ev.startUnlocked,
-        facts: (ev.facts || []).map(function (f) {
-          return {
-            id: f.id,
-            keyword: f.keyword || null,
-            text: f.text,
-            revealed: false,
-            isFalse: false,
-          };
-        }),
-        emotions: (ev.emotions || []).map(function (em) {
-          return {
-            id: em.id,
-            keyword: em.keyword || null,
-            text: em.text,
-            revealed: false,
-            unlocksEventId: em.unlocksEventId || null,
-          };
-        }),
+        factText: ev.factText || "",
+        emotionText: ev.emotionText || "",
+        factKeywords: (ev.factKeywords || []).slice(),
+        emotionKeywords: (ev.emotionKeywords || []).slice(),
+        revealsIdentity: !!ev.revealsIdentity,
+        factRead: false,
+        emotionRead: false,
       };
     });
 
-    const startEvent = events.find(function (e) {
-      return e.unlocked;
-    });
-
-    const deceasedId = deceased.id || pack.id || "unknown";
-    const falsePool = ((Content().falseFactPool || []).slice() || []).map(function (f) {
-      return { keyword: f.keyword, text: f.text };
+    events.sort(function (a, b) {
+      return (a.year || 0) - (b.year || 0);
     });
 
     return {
-      phase: "interrogation", // interrogation | verdict | ended
-      caseId: pack.id || deceasedId,
+      phase: "trial",
+      caseId: pack.id,
       caseIndex: resolved.index,
-      deceasedId: deceasedId,
-      trueName: deceased.trueName || "???",
-      displayName: labels().anonymousName || deceased.anonymousLabel || "이름 불명",
-      courtName: "공정의 법정",
-      defaultCourtName: "공정의 법정",
+      deceasedId: pack.id,
+      trueName: pack.name || "???",
+      displayName: labels().anonymousName || "이름 불명",
+      courtName: labels().courtName || "공정의 법정",
       nameRevealed: false,
-      intro: deceased.intro || "",
-      profileNote: deceased.profileNote || "",
-      values: (deceased.values || []).slice(),
-      trust: (b.trust && b.trust.start) || 5,
-      stress: (b.stress && b.stress.start) || 5,
-      courtTime: (b.courtTime && b.courtTime.start) || 10,
-      courtTimeMax: (b.courtTime && b.courtTime.max) || 10,
+      intro: pack.intro || "익명의 망자가 법정에 섰다.",
+      profileNote: pack.summary || "",
+      values: (pack.values || []).slice(),
+      coreConflictKeywords: (pack.coreConflictKeywords || []).slice(),
+      gender: pack.gender || "",
+      birthYear: pack.birthYear,
+      deathYear: pack.deathYear,
+      ageAtDeath: pack.ageAtDeath,
+      identityEventId: pack.identityEventId || null,
+      courtTimeMinutes: courtMin,
+      courtTimeMaxMinutes: maxMin,
+      courtTimeHours: hoursPerDay(),
+      spirit: spirit,
+      spiritMax: sp.max != null ? sp.max : 10,
+      essence: meta.essence != null ? meta.essence : 0,
+      rebirthDaysLeft: meta.rebirthDaysLeft != null ? meta.rebirthDaysLeft : rb.daysLeft != null ? rb.daysLeft : 100,
+      rebirthDaysTotal: rb.daysTotal != null ? rb.daysTotal : 100,
+      rebirthStones: meta.rebirthStones != null ? meta.rebirthStones : rb.stones != null ? rb.stones : 1,
+      day: meta.day != null ? meta.day : 1,
       events: events,
-      selectedEventId: startEvent ? startEvent.id : null,
-      identityFactId: pack.identityFactId || null,
-      achievements: (pack.achievements || []).slice(),
-      falseFactDeck: shuffle(falsePool, rng || Math.random),
-      falseFactDiscard: [],
-      hand: [],
-      deck: [],
-      discard: [],
-      soulBroken: false,
-      timeExpired: false,
-      failStreakFact: 0,
-      failStreakEmotion: 0,
-      lastResult: null,
-      pendingReveal: null,
-      guidePhase: "trial_start", // trial_start | pick_card | card_selected
-      rng: rng || Math.random,
+      selectedEventId: events.length ? events[0].id : null,
+      lastAction: null,
+      verdict: null,
+      lastSummary: null,
+      lobbyHistory: meta.lobbyHistory || [],
     };
   }
 
   const Game = {
     state: null,
     caseIndex: 0,
-    log: Log,
+    day: 1,
+    courtTimeMinutes: null,
+    spirit: null,
+    essence: 0,
+    rebirthDaysLeft: null,
+    rebirthStones: null,
+    lobbyHistory: [],
 
-    systemEnabled: sys,
-    labels: labels,
-    config: Config,
-    content: Content,
-
-    activeCase() {
-      return resolveCasePack(this.caseIndex).pack;
+    labels() {
+      return labels();
+    },
+    systemEnabled(name) {
+      return sys(name);
+    },
+    contentArt() {
+      return (Content().art && Content().art.paths) || {};
+    },
+    contentAudio() {
+      return Content().audio || {};
+    },
+    balance() {
+      return bal();
+    },
+    formatCourtTime(minutes) {
+      return formatMinutes(minutes != null ? minutes : this.courtTimeMinutes);
     },
 
-    start(rng, options) {
-      options = options || {};
-      const total = caseCount();
-      if (options.resetCase) this.caseIndex = 0;
-      else if (options.nextCase) this.caseIndex = (this.caseIndex + 1) % total;
-      else if (options.caseIndex != null) this.caseIndex = options.caseIndex;
+    bootMeta() {
+      const rb = bal().rebirth || {};
+      const sp = spiritCfg();
+      if (this.rebirthDaysLeft == null) this.rebirthDaysLeft = rb.daysLeft != null ? rb.daysLeft : 100;
+      if (this.rebirthStones == null) this.rebirthStones = rb.stones != null ? rb.stones : 1;
+      if (this.courtTimeMinutes == null) this.courtTimeMinutes = startCourtMinutes();
+      if (this.spirit == null) this.spirit = sp.start != null ? sp.start : 10;
+      if (this.essence == null) this.essence = 0;
+    },
 
-      this.state = createState(rng || Math.random, this.caseIndex);
-      this.caseIndex = this.state.caseIndex;
-      try {
-        localStorage.setItem("hellcourt.court." + this.state.deceasedId, this.state.courtName);
-      } catch (e) {}
-      Log.startSession(this.state.caseId || "unknown");
-      Hand.dealInitial(this.state, this.state.rng);
-      Log.push("trial_start", {
-        selectedEventId: this.state.selectedEventId,
-        trust: this.state.trust,
-        stress: this.state.stress,
-        courtName: this.state.courtName,
-        caseId: this.state.caseId,
-        caseIndex: this.state.caseIndex,
-        identityFactId: this.state.identityFactId,
+    syncResourcesFromState() {
+      const s = this.state;
+      if (!s) return;
+      if (s.courtTimeMinutes != null) this.courtTimeMinutes = s.courtTimeMinutes;
+      if (s.spirit != null) this.spirit = s.spirit;
+      if (s.essence != null) this.essence = s.essence;
+    },
+
+    enterLobby(options) {
+      options = options || {};
+      this.bootMeta();
+      this.state = {
+        phase: "lobby",
+        day: this.day,
+        courtTimeMinutes: this.courtTimeMinutes,
+        courtTimeMaxMinutes: maxCourtMinutes(),
+        courtTimeHours: hoursPerDay(),
+        spirit: this.spirit,
+        spiritMax: (spiritCfg().max != null ? spiritCfg().max : 10),
+        essence: this.essence,
+        rebirthDaysLeft: this.rebirthDaysLeft,
+        rebirthDaysTotal: (bal().rebirth && bal().rebirth.daysTotal) || 100,
+        rebirthStones: this.rebirthStones,
+        lastSummary: options.summary || (this.lobbyHistory.length ? this.lobbyHistory[this.lobbyHistory.length - 1] : null),
+        lobbyHistory: this.lobbyHistory.slice(),
+        caseIndex: this.caseIndex,
+        nextCaseIndex: this.caseIndex % Math.max(1, caseCount()),
+        dayJustAdvanced: !!options.dayJustAdvanced,
+      };
+      Log.push("lobby_enter", {
+        day: this.day,
+        courtTimeMinutes: this.courtTimeMinutes,
+        spirit: this.spirit,
+        essence: this.essence,
+        historyLen: this.lobbyHistory.length,
       });
       return this.state;
     },
 
+    startTrial(options) {
+      options = options || {};
+      this.bootMeta();
+      if (!this.canStartTrial()) {
+        Log.push("trial_blocked", {
+          reason: "no_time",
+          courtTimeMinutes: this.courtTimeMinutes,
+          day: this.day,
+        });
+        return null;
+      }
+      if (options.resetCase) this.caseIndex = 0;
+      else if (options.nextCase) this.caseIndex = (this.caseIndex + 1) % Math.max(1, caseCount());
+      else if (options.caseIndex != null) this.caseIndex = options.caseIndex;
+
+      this.state = createState(this.caseIndex, {
+        day: this.day,
+        courtTimeMinutes: this.courtTimeMinutes,
+        spirit: this.spirit,
+        essence: this.essence,
+        rebirthDaysLeft: this.rebirthDaysLeft,
+        rebirthStones: this.rebirthStones,
+        lobbyHistory: this.lobbyHistory,
+      });
+      this.caseIndex = this.state.caseIndex;
+      Log.startSession(this.state.caseId);
+      Log.push("trial_start", {
+        caseId: this.state.caseId,
+        caseIndex: this.state.caseIndex,
+        day: this.day,
+        courtTimeMinutes: this.state.courtTimeMinutes,
+        spirit: this.state.spirit,
+        essence: this.state.essence,
+      });
+      return this.state;
+    },
+
+    /** 법정시간 0이면 다음 재판 불가 — 하루 회복 필요 */
+    canStartTrial() {
+      this.bootMeta();
+      return (this.courtTimeMinutes || 0) > 0;
+    },
+
+    startNewRun() {
+      const rb = bal().rebirth || {};
+      const sp = spiritCfg();
+      this.caseIndex = 0;
+      this.day = 1;
+      this.courtTimeMinutes = startCourtMinutes();
+      this.spirit = sp.start != null ? sp.start : 10;
+      this.essence = 0;
+      this.rebirthDaysLeft = rb.daysLeft != null ? rb.daysLeft : 100;
+      this.rebirthStones = rb.stones != null ? rb.stones : 1;
+      this.lobbyHistory = [];
+      return this.enterLobby();
+    },
+
+    /** 하루 종료 → 법정시간만 풀 회복. 영력은 유지. */
+    advanceDay() {
+      this.bootMeta();
+      this.syncResourcesFromState();
+      this.day += 1;
+      this.rebirthDaysLeft = Math.max(0, (this.rebirthDaysLeft != null ? this.rebirthDaysLeft : 100) - 1);
+      this.courtTimeMinutes = startCourtMinutes();
+      Log.push("day_advance", {
+        day: this.day,
+        courtTimeMinutes: this.courtTimeMinutes,
+        spirit: this.spirit,
+        essence: this.essence,
+      });
+      return this.enterLobby({ dayJustAdvanced: true, summary: this.lobbyHistory.length ? this.lobbyHistory[this.lobbyHistory.length - 1] : null });
+    },
+
+    /** 로비: 영기로 영력 회복 */
+    restoreSpirit() {
+      this.bootMeta();
+      this.syncResourcesFromState();
+      const sp = spiritCfg();
+      const amount = sp.restoreAmount != null ? sp.restoreAmount : 2;
+      const cost = sp.restoreCostEssence != null ? sp.restoreCostEssence : 1;
+      const max = sp.max != null ? sp.max : 10;
+      if (this.spirit >= max) return { ok: false, reason: "full" };
+      if (this.essence < cost) return { ok: false, reason: "no_essence" };
+      this.essence -= cost;
+      this.spirit = clamp(this.spirit + amount, sp.min != null ? sp.min : 0, max);
+      if (this.state && this.state.phase === "lobby") {
+        this.state.essence = this.essence;
+        this.state.spirit = this.spirit;
+      }
+      Log.push("spirit_restore", { amount: amount, cost: cost, spirit: this.spirit, essence: this.essence });
+      return { ok: true, spirit: this.spirit, essence: this.essence, amount: amount, cost: cost };
+    },
+
     selectEvent(eventId) {
       const s = this.state;
-      if (!s || s.phase !== "interrogation" || interrogationLocked(s)) return { ok: false, reason: "locked" };
+      if (!s || s.phase !== "trial") return { ok: false, reason: "bad_phase" };
       const ev = Events.find(s, eventId);
-      if (!ev || !ev.unlocked) return { ok: false, reason: "locked_event" };
+      if (!ev) return { ok: false, reason: "no_event" };
       s.selectedEventId = eventId;
-      if (s.guidePhase === "trial_start") s.guidePhase = "pick_card";
       Log.push("event_selected", { eventId: eventId });
       return { ok: true, event: ev };
     },
 
-    setGuideCardFocus(handIndex) {
+    investigateFact() {
       const s = this.state;
-      if (!s) return;
-      if (interrogationLocked(s)) return;
-      if (handIndex == null || handIndex < 0) {
-        s.guidePhase = s.selectedEventId ? "pick_card" : "trial_start";
-        return;
-      }
-      s.guidePhase = "card_selected";
-      s.guideCardIndex = handIndex;
-    },
-
-    /**
-     * 질문 카드 사용
-     * 순서: 스탯 변화 → 법정시간 → 해금 판정 → 공개 → 영혼 파괴/시간 만료 검사 → 손패 교체
-     */
-    useCard(handIndex) {
-      const s = this.state;
-      if (!s || s.phase !== "interrogation" || interrogationLocked(s)) {
-        return { ok: false, reason: interrogationLocked(s) ? "locked" : "bad_phase" };
-      }
-      if (!s.selectedEventId) return { ok: false, reason: "no_event" };
-
-      const cardId = s.hand[handIndex];
-      const preview = Hand.cardById(cardId);
-      if (!preview) return { ok: false, reason: "no_card" };
-
+      if (!s || s.phase !== "trial") return { ok: false, reason: "bad_phase" };
       const ev = Events.selected(s);
-      const kind = preview.type;
-      const list = kind === "FACT" ? ev.facts : ev.emotions;
-      if (Events.allRevealed(list)) {
-        return { ok: false, reason: "info_complete", card: preview, event: ev };
+      if (!ev) return { ok: false, reason: "no_event" };
+      if (ev.factRead) return { ok: false, reason: "already", event: ev };
+
+      const cost = this.actionCosts().factTime;
+      if (s.courtTimeMinutes < cost) return { ok: false, reason: "no_time", event: ev };
+
+      s.courtTimeMinutes = Math.max(courtCfg().min != null ? courtCfg().min : 0, s.courtTimeMinutes - cost);
+      this.courtTimeMinutes = s.courtTimeMinutes;
+      ev.factRead = true;
+
+      if (sys("identityReveal") && ev.revealsIdentity && !s.nameRevealed) {
+        s.nameRevealed = true;
+        s.displayName = s.trueName;
       }
 
-      const card = Hand.play(s, handIndex, s.rng, { draw: false });
-      const deltas = Values.resolveDeltas(s, card);
-      const statMod = CardEffect.applyStatMod(deltas, card.effect, s.rng);
-      const trustApplied = statMod.trustDelta;
-      const stressApplied = statMod.stressDelta;
-      Stats.apply(s, trustApplied, stressApplied);
-      if (statMod.noStatIncrease) {
-        Log.push("card_effect_no_stat_up", {
-          effectId: card.effect && card.effect.id,
-          chance: statMod.noStatIncreaseChance,
-          before: { trust: deltas.trustDelta, stress: deltas.stressDelta },
-          after: { trust: trustApplied, stress: stressApplied },
-        });
-      }
-      if (deltas.matched) {
-        Log.push("value_resonance", {
-          value: deltas.value,
-          base: { trust: card.trustDelta || 0, stress: card.stressDelta || 0 },
-          applied: { trust: trustApplied, stress: stressApplied },
-        });
-      }
-      if (deltas.stressDampened && !statMod.noStatIncrease) {
-        Log.push("stress_dampened", {
-          from: deltas.stressBeforeDamp,
-          to: deltas.stressDelta,
-          stress: s.stress,
-          dampenFrom: StressGuard.dampenFrom(),
-        });
-      }
-      if (sys("handDraw")) Hand.drawOne(s, s.rng);
-
-      if (sys("courtTimeGauge")) {
-        const ct = bal().courtTime || {};
-        const cost = ct.costPerQuestion != null ? ct.costPerQuestion : 1;
-        const min = ct.min != null ? ct.min : 0;
-        s.courtTime = Math.max(min, s.courtTime - cost);
-        Log.push("court_time", { courtTime: s.courtTime, cost: cost });
-      }
-
-      s.guidePhase = "pick_card";
-      s.pendingReveal = null;
-
-      const deceit = kind === "FACT" && isTrustDeceitActive(s);
-      let roll;
-      if (deceit) {
-        // 신뢰 MAX: 사실 질문은 무조건 해금하되 내용은 거짓
-        s.failStreakFact = 0;
-        roll = { success: true, p: 1, roll: 0, deceit: true };
-        Log.push("unlock_roll", { type: kind, p: 1, roll: 0, success: true, deceit: true });
-      } else {
-        roll = Unlock.roll(s, kind, s.rng);
-      }
-
-      let reveal = null;
-      let needChoose = false;
-      let choices = [];
-      let failBurst = null;
-
-      if (roll.success) {
-        choices = Events.hiddenChoices(s, kind).map(function (info) {
-          return {
-            id: info.id,
-            keyword: info.keyword || (kind === "FACT" ? "사실" : "감정"),
-            unlocksEventId: info.unlocksEventId || null,
-          };
-        });
-        if (choices.length === 1) {
-          reveal = Events.revealById(s, kind, choices[0].id, { deceit: deceit });
-        } else if (choices.length > 1) {
-          needChoose = true;
-          s.pendingReveal = {
-            kind: kind,
-            eventId: ev.id,
-            choiceIds: choices.map(function (c) {
-              return c.id;
-            }),
-            deceit: deceit,
-            cardEffect: card.effect || null,
-          };
-          Log.push("reveal_choice_open", {
-            kind: kind,
-            deceit: deceit,
-            choices: choices.map(function (c) {
-              return c.id;
-            }),
-          });
-        }
-      } else if (sys("failCollapse")) {
-        const fc = bal().failCollapse || {};
-        const threshold = fc.threshold != null ? fc.threshold : 2;
-        const streak = kind === "FACT" ? s.failStreakFact : s.failStreakEmotion;
-        if (streak >= threshold) {
-          failBurst = Events.revealAllHidden(s, kind);
-          if (kind === "FACT") s.failStreakFact = 0;
-          else s.failStreakEmotion = 0;
-          if (!failBurst.ok) failBurst = null;
-        }
-      }
-
-      // 카드 특수 효과: 본 해금과 별도로 발동 (키워드 선택 대기 중에는 선택 확정 후)
-      let bonusReveals = [];
-      if (!needChoose && card.effect) {
-        bonusReveals = CardEffect.apply(s, card.effect, s.rng);
-      }
-
-      // 키워드 선택은 획득한 해금이므로, 선택 대기 중에는 강제 판결을 미룸
-      let broken = false;
-      let timeOut = false;
-      if (!needChoose) {
-        broken = Soul.check(s);
-        timeOut = !broken && CourtTime.check(s);
-        if (broken || timeOut) Log.enterVerdict();
-      }
-
-      const result = {
-        ok: true,
-        card: card,
-        roll: roll,
-        reveal: reveal,
-        needChoose: needChoose,
-        choices: choices,
-        failBurst: failBurst,
-        bonusReveals: bonusReveals,
-        deceit: deceit,
-        failStreakFact: s.failStreakFact,
-        failStreakEmotion: s.failStreakEmotion,
-        soulBroken: broken,
-        timeExpired: timeOut || s.timeExpired,
-        trust: s.trust,
-        stress: s.stress,
-        hand: s.hand.slice(),
-        valueMatch: deltas.matched,
-        value: deltas.value,
-        appliedDeltas: { trust: trustApplied, stress: stressApplied },
-        stressDampened: !!deltas.stressDampened && !statMod.noStatIncrease,
-        noStatIncrease: !!statMod.noStatIncrease,
-      };
-      s.lastResult = result;
-      return result;
-    },
-
-    failCollapseThreshold() {
-      const fc = bal().failCollapse || {};
-      return fc.threshold != null ? fc.threshold : 2;
-    },
-
-    getFailStreaks() {
-      const s = this.state;
-      if (!s) return { fact: 0, emotion: 0, threshold: this.failCollapseThreshold() };
+      s.lastAction = { type: "fact", eventId: ev.id, text: ev.factText };
+      Log.push("fact_read", {
+        eventId: ev.id,
+        costMinutes: cost,
+        courtTimeMinutes: s.courtTimeMinutes,
+        nameRevealed: s.nameRevealed,
+      });
       return {
-        fact: s.failStreakFact || 0,
-        emotion: s.failStreakEmotion || 0,
-        threshold: this.failCollapseThreshold(),
+        ok: true,
+        event: ev,
+        text: ev.factText,
+        nameRevealed: s.nameRevealed,
+        courtTimeMinutes: s.courtTimeMinutes,
+        spirit: s.spirit,
       };
     },
 
-    isTrustDeceitActive() {
-      return isTrustDeceitActive(this.state);
-    },
-
-    confirmReveal(infoId) {
+    investigateEmotion() {
       const s = this.state;
-      if (!s || !s.pendingReveal) return { ok: false, reason: "no_pending" };
-      const pending = s.pendingReveal;
-      if (pending.choiceIds.indexOf(infoId) < 0) return { ok: false, reason: "bad_choice" };
+      if (!s || s.phase !== "trial") return { ok: false, reason: "bad_phase" };
+      const ev = Events.selected(s);
+      if (!ev) return { ok: false, reason: "no_event" };
+      if (!ev.factRead) return { ok: false, reason: "need_fact", event: ev };
+      if (ev.emotionRead) return { ok: false, reason: "already", event: ev };
 
-      const reveal = Events.revealById(s, pending.kind, infoId, { deceit: !!pending.deceit });
-      const bonusReveals = pending.cardEffect
-        ? CardEffect.apply(s, pending.cardEffect, s.rng)
-        : [];
-      s.pendingReveal = null;
-      Log.push("reveal_choice_confirm", {
-        infoId: infoId,
-        kind: pending.kind,
-        deceit: !!pending.deceit,
+      const c = this.actionCosts();
+      const sp = spiritCfg();
+      if (s.courtTimeMinutes < c.emotionTime) return { ok: false, reason: "no_time", event: ev };
+      if (s.spirit < c.emotionSpirit) return { ok: false, reason: "no_spirit", event: ev };
+
+      s.courtTimeMinutes = Math.max(courtCfg().min != null ? courtCfg().min : 0, s.courtTimeMinutes - c.emotionTime);
+      s.spirit = Math.max(sp.min != null ? sp.min : 0, s.spirit - c.emotionSpirit);
+      this.courtTimeMinutes = s.courtTimeMinutes;
+      this.spirit = s.spirit;
+      ev.emotionRead = true;
+
+      s.lastAction = { type: "emotion", eventId: ev.id, text: ev.emotionText };
+      Log.push("emotion_read", {
+        eventId: ev.id,
+        costMinutes: c.emotionTime,
+        costSpirit: c.emotionSpirit,
+        courtTimeMinutes: s.courtTimeMinutes,
+        spirit: s.spirit,
       });
-
-      const broken = Soul.check(s);
-      const timeOut = !broken && CourtTime.check(s);
-      if (broken || timeOut) Log.enterVerdict();
-
-      const result = {
-        ok: !!reveal.ok,
-        reveal: reveal,
-        bonusReveals: bonusReveals,
-        deceit: !!pending.deceit,
-        soulBroken: broken,
-        timeExpired: timeOut || s.timeExpired,
-        trust: s.trust,
-        stress: s.stress,
+      return {
+        ok: true,
+        event: ev,
+        text: ev.emotionText,
+        courtTimeMinutes: s.courtTimeMinutes,
+        spirit: s.spirit,
       };
-      s.lastResult = result;
-      return result;
     },
 
-    hasPendingReveal() {
-      return !!(this.state && this.state.pendingReveal);
-    },
-
-    openVerdict(forced) {
+    openVerdict() {
       const s = this.state;
-      if (!s) return { ok: false };
-      if (s.phase === "ended") return { ok: false, reason: "ended" };
+      if (!s || (s.phase !== "trial" && s.phase !== "verdict")) return { ok: false };
       s.phase = "verdict";
-      Log.enterVerdict();
       Log.push("verdict_open", {
-        forced: !!forced,
-        soulBroken: s.soulBroken,
-        timeExpired: s.timeExpired,
-        karma: Karma.evaluate(s),
+        rushed: Karma.isRushed(s),
+        reads: Events.countRead(s),
       });
-      return { ok: true };
+      return { ok: true, rushed: Karma.isRushed(s) };
     },
 
     submitVerdict(choice, reason) {
       const s = this.state;
       if (!s || s.phase !== "verdict") return { ok: false, reason: "bad_phase" };
-      if (choice !== "guilty" && choice !== "innocent") return { ok: false, reason: "bad_choice" };
+      if (choice !== "heaven" && choice !== "hell") return { ok: false, reason: "bad_choice" };
+
+      const reads = Events.countRead(s);
+      const rushed = Karma.isRushed(s);
       s.phase = "ended";
-      const karma = Karma.evaluate(s);
       s.verdict = {
         choice: choice,
         reason: reason || "",
-        karma: karma,
+        rushed: rushed,
+        reads: reads,
       };
-      try {
-        localStorage.setItem("hellcourt.court." + (s.deceasedId || s.caseId), s.courtName);
-      } catch (e) {}
-      Log.finishVerdict(choice, reason || "");
-      Log.push("verdict_karma", karma);
-      return { ok: true, verdict: s.verdict };
+
+      const rewards = bal().rewards || {};
+      const essenceGain = rushed
+        ? rewards.essenceIfRushed != null
+          ? rewards.essenceIfRushed
+          : 3
+        : rewards.essenceIfNotRushed != null
+          ? rewards.essenceIfNotRushed
+          : 1;
+      this.essence = (this.essence || 0) + essenceGain;
+      s.essence = this.essence;
+
+      // 같은 날 자원 유지 — 날짜는 넘기지 않음
+      this.courtTimeMinutes = s.courtTimeMinutes;
+      this.spirit = s.spirit;
+      this.caseIndex = (s.caseIndex + 1) % Math.max(1, caseCount());
+
+      // 환생석: 모든 사실·감정을 열람했을 때만 +1
+      const fullyRead =
+        reads.total > 0 && reads.facts === reads.total && reads.emotions === reads.total;
+      if (fullyRead) this.rebirthStones = (this.rebirthStones || 0) + 1;
+
+      const summary = {
+        day: this.day,
+        caseId: s.caseId,
+        deceasedName: s.nameRevealed ? s.trueName : s.displayName,
+        trueName: s.trueName,
+        choice: choice,
+        rushed: rushed,
+        fullyRead: fullyRead,
+        factsRead: reads.facts,
+        emotionsRead: reads.emotions,
+        eventCount: reads.total,
+        courtTimeMinutesLeft: s.courtTimeMinutes,
+        courtTimeLeftLabel: formatMinutes(s.courtTimeMinutes),
+        spiritLeft: s.spirit,
+        essenceGain: essenceGain,
+        essenceTotal: this.essence,
+        rebirthStoneGained: fullyRead ? 1 : 0,
+        reason: reason || "",
+      };
+      s.lastSummary = summary;
+      this.lobbyHistory.push(summary);
+
+      Log.push("verdict_submit", summary);
+      return { ok: true, verdict: s.verdict, summary: summary };
     },
 
-    countRevealedKeywords() {
-      return Karma.countRevealed(this.state);
-    },
-
-    karmaPreview() {
-      return Karma.evaluate(this.state);
-    },
-
-    isInterrogationLocked() {
-      return interrogationLocked(this.state);
-    },
-
-    getHandCards() {
-      const s = this.state;
-      if (!s) return [];
-      return s.hand.map(function (id) {
-        return Hand.cardById(id);
-      }).filter(Boolean);
+    finishToLobby() {
+      this.syncResourcesFromState();
+      const summary = this.state && this.state.lastSummary;
+      return this.enterLobby({ summary: summary });
     },
 
     getSelectedEvent() {
-      return this.state ? Events.selected(this.state) : null;
+      return this.state && this.state.phase === "trial" ? Events.selected(this.state) : null;
     },
 
-    infoComplete(kind) {
-      const ev = this.getSelectedEvent();
-      if (!ev) return false;
-      return Events.allRevealed(kind === "FACT" ? ev.facts : ev.emotions);
+    getReadCounts() {
+      return this.state ? Events.countRead(this.state) : { facts: 0, emotions: 0, total: 0 };
     },
 
-    unlockChancePreview(type) {
-      if (!this.state) return 0;
-      // 카드 적용 전 미리보기용 — 실제 판정은 적용 후 수치
-      return Unlock.chance(this.state, type);
+    isRushedPreview() {
+      return !!(this.state && this.state.phase === "trial" && Karma.isRushed(this.state));
     },
 
-    riskPreview(card) {
-      if (!this.state || !card) return null;
-      const b = bal();
-      const tMax = (b.trust && b.trust.max) || 10;
-      const sMax = (b.stress && b.stress.max) || 10;
-      const deltas = Values.resolveDeltas(this.state, card);
-      const nextTrust = clamp(this.state.trust + deltas.trustDelta, (b.trust && b.trust.min) || 0, tMax);
-      const nextStress = clamp(this.state.stress + deltas.stressDelta, (b.stress && b.stress.min) || 0, sMax);
-      const fake = {
-        trust: nextTrust,
-        stress: nextStress,
-        failStreakFact: this.state.failStreakFact,
-        failStreakEmotion: this.state.failStreakEmotion,
-      };
-      const deceit = card.type === "FACT" && sys("trustDeceit") && nextTrust >= tMax;
-      const p = deceit ? 1 : Unlock.chance(fake, card.type);
-      const soulRisk = sys("soulBreak") && nextStress >= sMax;
+    actionCosts() {
+      const ct = courtCfg();
+      const sp = spiritCfg();
       return {
-        nextTrust: nextTrust,
-        nextStress: nextStress,
-        unlockP: p,
-        soulRisk: soulRisk,
-        deceit: deceit,
-        valueMatch: deltas.matched,
-        value: deltas.value,
-        trustDelta: deltas.trustDelta,
-        stressDelta: deltas.stressDelta,
-        stressDampened: !!deltas.stressDampened,
-        noStatIncreaseChance:
-          card.effect && card.effect.noStatIncrease
-            ? card.effect.noStatIncrease.chance || 0
-            : 0,
+        factTime: ct.costFactMinutes != null ? ct.costFactMinutes : 30,
+        emotionTime: ct.costEmotionMinutes != null ? ct.costEmotionMinutes : 60,
+        emotionSpirit: sp.costEmotion != null ? sp.costEmotion : 2,
       };
     },
 
-    cardDeltas(card) {
-      if (!card) return null;
-      return Values.resolveDeltas(this.state, card);
+    canInvestigateFact() {
+      const s = this.state;
+      if (!s || s.phase !== "trial") return false;
+      const ev = Events.selected(s);
+      if (!ev || ev.factRead) return false;
+      return s.courtTimeMinutes >= this.actionCosts().factTime;
     },
 
-    describeCardEffect(card) {
-      return CardEffect.describe(card && card.effect);
-    },
-
-    hasCardEffect(card) {
-      return CardEffect.hasAny(card && card.effect);
-    },
-
-    stressDampenFrom() {
-      return StressGuard.dampenFrom();
-    },
-
-    isHighStress() {
-      return !!(this.state && this.state.stress >= StressGuard.dampenFrom());
+    canInvestigateEmotion() {
+      const s = this.state;
+      if (!s || s.phase !== "trial") return false;
+      const ev = Events.selected(s);
+      if (!ev || !ev.factRead || ev.emotionRead) return false;
+      const c = this.actionCosts();
+      return s.courtTimeMinutes >= c.emotionTime && s.spirit >= c.emotionSpirit;
     },
 
     downloadLog() {
