@@ -17,7 +17,7 @@
         ageAtDeath: 32,
         gender: "여",
         summary:
-          "버림받은 아이로 시작해, 같은 처지의 타인을 남기지 않으려다 불길 속에서 생을 마친 망자.",
+          "한 생의 기록이 법정에 올라왔다. 관계와 선택에 관한 사건들이 연표에 남아 있다.",
         values: ["관계", "정의"],
         coreConflictKeywords: ["버림", "보호", "다짐", "선택", "희생"],
         identityEventId: "soul_hansora_event_01",
@@ -81,7 +81,7 @@
         ageAtDeath: 44,
         gender: "남",
         summary:
-          "타인의 대가를 장부와 말로 덮어 가며 올라섰고, 끝내 문을 잠근 채 도망치다 생을 마친 망자.",
+          "직장과 거래에 얽힌 기록이 여럿 남아 있다. 생전 행적은 사실과 감정을 통해 확인해야 한다.",
         values: ["경쟁", "쾌락"],
         coreConflictKeywords: ["이득", "은폐", "경멸", "도주", "자기보존"],
         identityEventId: "soul_kangsehoon_event_01",
@@ -145,7 +145,7 @@
         ageAtDeath: 36,
         gender: "남",
         summary:
-          "동생을 지키려 진실을 감추다, 보호와 방조가 겹친 끝에서 함께 무너진 망자.",
+          "가족과의 관계가 생의 기록에 반복해 나타난다. 각 사건의 경위는 열람 후에야 드러난다.",
         values: ["관계", "질서"],
         coreConflictKeywords: ["보호", "은닉", "지연", "부채", "미결"],
         identityEventId: "soul_junghayoon_event_01",
@@ -209,7 +209,7 @@
         ageAtDeath: 68,
         gender: "남",
         summary:
-          "작은 제조업체를 대기업으로 성장시켜 수천 개의 일자리를 만들었지만, 그 과정에서 동료와 직원들을 반복해서 희생시킨 기업가.",
+          "제조업체를 운영하며 오래 일했던 인물이다. 성장과 조직, 가족에 관한 사건이 연표에 남아 있다.",
         values: ["경쟁", "관계"],
         coreConflictKeywords: ["성공", "생존", "희생", "책임", "가족"],
         identityEventId: "soul_001_event_02",

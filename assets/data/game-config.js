@@ -27,7 +27,7 @@
         maxMinutes: 480,
         startMinutes: 480,
         costFactMinutes: 30,
-        costEmotionMinutes: 60,
+        costEmotionMinutes: 15,
       },
       spirit: {
         min: 0,
@@ -43,7 +43,14 @@
         essenceIfRushed: 3,
         essenceIfNotRushed: 1,
       },
-      rebirth: { daysTotal: 100, daysLeft: 100, stones: 1 },
+      rebirth: {
+        daysTotal: 10,
+        daysLeft: 10,
+        stones: 1,
+        // 로비: 영기 → 환생석
+        stoneCostEssence: 1,
+        stoneBuyAmount: 1,
+      },
       karma: { minReadRatio: 0.35 },
       bgmVolume: 0.45,
       sfxVolume: 0.55,
@@ -67,6 +74,7 @@
       karmaEnd: "업보 — 충분히 알아보지 않고 판결하였다.",
       dayEnded: "하루가 지나 법정시간이 회복되었습니다.",
       spiritRestored: "영력을 회복했습니다.",
+      stoneBought: "환생석을 구입했습니다.",
       essenceLow: "영기가 부족합니다.",
     },
   };

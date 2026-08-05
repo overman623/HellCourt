@@ -1,9 +1,9 @@
 (function () {
   /*
-   * 지옥법정 — 개정 룰 MVP 코어
-   * 타임라인 공개 → 사실 열람(분) → 감정 질문(분+영력) → 천국/지옥 → 로비
-   * 법정시간: 하루 풀(분), 같은 날 재판 간 유지 / 날짜 변경 시만 회복
-   * 영력: 자동 회복 없음 / 영기 재화로 로비에서 회복
+   * ?????????? ??MVP ??
+   * ????????? ????? ???(?? ???? ??(?????) ????/???????
+   * ?????: ??? ??(??, ??? ????? ?????? / ??? ?????? ???
+   * ???: ??? ??? ??? / ??? ?????????? ???
    */
   "use strict";
 
@@ -41,10 +41,10 @@
     return { pack: cases[i], index: i };
   }
 
-  /** 신규 soul 스키마 / 구 cases 스키마 모두 런타임 상태로 정규화 */
+  /** ??? soul ?????/ ??cases ??????? ????????????????*/
   function normalizeSoulPack(pack) {
     if (!pack) return null;
-    // 구 포맷: { deceased, events with factText }
+    // ?????: { deceased, events with factText }
     if (pack.deceased) {
       return {
         id: pack.id,
@@ -74,7 +74,7 @@
         }),
       };
     }
-    // 신 포맷: soul 루트
+    // ?????: soul ??
     return {
       id: pack.id,
       name: pack.name || "???",
@@ -128,7 +128,7 @@
     return ct.hoursPerDay != null ? ct.hoursPerDay : Math.round(maxCourtMinutes() / 60);
   }
 
-  /** 분 → "H:MM" / 표시용 */
+  /** ????"H:MM" / ?????*/
   function formatMinutes(total) {
     const m = Math.max(0, Math.floor(total || 0));
     const h = Math.floor(m / 60);
@@ -243,10 +243,10 @@
       caseIndex: resolved.index,
       deceasedId: pack.id,
       trueName: pack.name || "???",
-      displayName: labels().anonymousName || "이름 불명",
-      courtName: labels().courtName || "공정의 법정",
+      displayName: labels().anonymousName || "??? ??",
+      courtName: labels().courtName || "??????",
       nameRevealed: false,
-      intro: pack.intro || "익명의 망자가 법정에 섰다.",
+      intro: pack.intro || "???????? ???????.",
       profileNote: pack.summary || "",
       values: (pack.values || []).slice(),
       coreConflictKeywords: (pack.coreConflictKeywords || []).slice(),
@@ -261,8 +261,8 @@
       spirit: spirit,
       spiritMax: sp.max != null ? sp.max : 10,
       essence: meta.essence != null ? meta.essence : 0,
-      rebirthDaysLeft: meta.rebirthDaysLeft != null ? meta.rebirthDaysLeft : rb.daysLeft != null ? rb.daysLeft : 100,
-      rebirthDaysTotal: rb.daysTotal != null ? rb.daysTotal : 100,
+      rebirthDaysLeft: meta.rebirthDaysLeft != null ? meta.rebirthDaysLeft : rb.daysLeft != null ? rb.daysLeft : 10,
+      rebirthDaysTotal: rb.daysTotal != null ? rb.daysTotal : 10,
       rebirthStones: meta.rebirthStones != null ? meta.rebirthStones : rb.stones != null ? rb.stones : 1,
       day: meta.day != null ? meta.day : 1,
       events: events,
@@ -307,7 +307,7 @@
     bootMeta() {
       const rb = bal().rebirth || {};
       const sp = spiritCfg();
-      if (this.rebirthDaysLeft == null) this.rebirthDaysLeft = rb.daysLeft != null ? rb.daysLeft : 100;
+      if (this.rebirthDaysLeft == null) this.rebirthDaysLeft = rb.daysLeft != null ? rb.daysLeft : 10;
       if (this.rebirthStones == null) this.rebirthStones = rb.stones != null ? rb.stones : 1;
       if (this.courtTimeMinutes == null) this.courtTimeMinutes = startCourtMinutes();
       if (this.spirit == null) this.spirit = sp.start != null ? sp.start : 10;
@@ -335,7 +335,7 @@
         spiritMax: (spiritCfg().max != null ? spiritCfg().max : 10),
         essence: this.essence,
         rebirthDaysLeft: this.rebirthDaysLeft,
-        rebirthDaysTotal: (bal().rebirth && bal().rebirth.daysTotal) || 100,
+        rebirthDaysTotal: (bal().rebirth && bal().rebirth.daysTotal) || 10,
         rebirthStones: this.rebirthStones,
         lastSummary: options.summary || (this.lobbyHistory.length ? this.lobbyHistory[this.lobbyHistory.length - 1] : null),
         lobbyHistory: this.lobbyHistory.slice(),
@@ -390,7 +390,7 @@
       return this.state;
     },
 
-    /** 법정시간 0이면 다음 재판 불가 — 하루 회복 필요 */
+    /** ????? 0??? ??? ??? ??? ????? ??? ??? */
     canStartTrial() {
       this.bootMeta();
       return (this.courtTimeMinutes || 0) > 0;
@@ -404,18 +404,18 @@
       this.courtTimeMinutes = startCourtMinutes();
       this.spirit = sp.start != null ? sp.start : 10;
       this.essence = 0;
-      this.rebirthDaysLeft = rb.daysLeft != null ? rb.daysLeft : 100;
+      this.rebirthDaysLeft = rb.daysLeft != null ? rb.daysLeft : 10;
       this.rebirthStones = rb.stones != null ? rb.stones : 1;
       this.lobbyHistory = [];
       return this.enterLobby();
     },
 
-    /** 하루 종료 → 법정시간만 풀 회복. 영력은 유지. */
+    /** ??? ?? ??????????? ???. ????? ????. */
     advanceDay() {
       this.bootMeta();
       this.syncResourcesFromState();
       this.day += 1;
-      this.rebirthDaysLeft = Math.max(0, (this.rebirthDaysLeft != null ? this.rebirthDaysLeft : 100) - 1);
+      this.rebirthDaysLeft = Math.max(0, (this.rebirthDaysLeft != null ? this.rebirthDaysLeft : 10) - 1);
       this.courtTimeMinutes = startCourtMinutes();
       Log.push("day_advance", {
         day: this.day,
@@ -426,7 +426,7 @@
       return this.enterLobby({ dayJustAdvanced: true, summary: this.lobbyHistory.length ? this.lobbyHistory[this.lobbyHistory.length - 1] : null });
     },
 
-    /** 로비: 영기로 영력 회복 */
+    /** ??: ???????? ??? */
     restoreSpirit() {
       this.bootMeta();
       this.syncResourcesFromState();
@@ -444,6 +444,34 @@
       }
       Log.push("spirit_restore", { amount: amount, cost: cost, spirit: this.spirit, essence: this.essence });
       return { ok: true, spirit: this.spirit, essence: this.essence, amount: amount, cost: cost };
+    },
+
+    buyRebirthStone() {
+      this.bootMeta();
+      this.syncResourcesFromState();
+      const rb = bal().rebirth || {};
+      const cost = rb.stoneCostEssence != null ? rb.stoneCostEssence : 1;
+      const amount = rb.stoneBuyAmount != null ? rb.stoneBuyAmount : 1;
+      if (this.essence < cost) return { ok: false, reason: "no_essence" };
+      this.essence -= cost;
+      this.rebirthStones = (this.rebirthStones || 0) + amount;
+      if (this.state && this.state.phase === "lobby") {
+        this.state.essence = this.essence;
+        this.state.rebirthStones = this.rebirthStones;
+      }
+      Log.push("stone_buy", {
+        amount: amount,
+        cost: cost,
+        rebirthStones: this.rebirthStones,
+        essence: this.essence,
+      });
+      return {
+        ok: true,
+        amount: amount,
+        cost: cost,
+        rebirthStones: this.rebirthStones,
+        essence: this.essence,
+      };
     },
 
     selectEvent(eventId) {
@@ -565,12 +593,12 @@
       this.essence = (this.essence || 0) + essenceGain;
       s.essence = this.essence;
 
-      // 같은 날 자원 유지 — 날짜는 넘기지 않음
+      // ??? ????? ???? ??????????? ???
       this.courtTimeMinutes = s.courtTimeMinutes;
       this.spirit = s.spirit;
       this.caseIndex = (s.caseIndex + 1) % Math.max(1, caseCount());
 
-      // 환생석: 모든 사실·감정을 열람했을 때만 +1
+      // ????? ?? ?????????????? ??? +1
       const fullyRead =
         reads.total > 0 && reads.facts === reads.total && reads.emotions === reads.total;
       if (fullyRead) this.rebirthStones = (this.rebirthStones || 0) + 1;
@@ -624,7 +652,7 @@
       const sp = spiritCfg();
       return {
         factTime: ct.costFactMinutes != null ? ct.costFactMinutes : 30,
-        emotionTime: ct.costEmotionMinutes != null ? ct.costEmotionMinutes : 60,
+        emotionTime: ct.costEmotionMinutes != null ? ct.costEmotionMinutes : 15,
         emotionSpirit: sp.costEmotion != null ? sp.costEmotion : 2,
       };
     },

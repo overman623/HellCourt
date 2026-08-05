@@ -60,6 +60,27 @@
       }
       .title-item.selected { border-color: var(--focus); }
 
+      /* SETTINGS */
+      #screen-settings {
+        background: radial-gradient(ellipse at center, #141010 0%, #050505 70%);
+        padding: 2rem;
+      }
+      .settings-card {
+        width: min(420px, 92vw);
+        border: 1px solid var(--line);
+        background: var(--panel);
+        padding: 1.5rem 1.75rem;
+      }
+      .settings-card h1 {
+        margin: 0 0 1.1rem; font-size: 1.45rem; letter-spacing: 0.08em; text-align: center;
+      }
+      .settings-menu { display: flex; flex-direction: column; gap: 0.65rem; }
+      .settings-item {
+        padding: 0.7rem 1.1rem; border: 2px solid transparent;
+        background: rgba(20,20,20,0.85); letter-spacing: 0.06em; text-align: left;
+      }
+      .settings-item.selected { border-color: var(--focus); background: #222; }
+
       /* LOBBY */
       #screen-lobby {
         background: radial-gradient(ellipse at center, #1a1210 0%, #050505 70%);
@@ -277,6 +298,13 @@
       <nav class="title-menu" id="titleMenu" aria-label="타이틀 메뉴"></nav>
     </section>
 
+    <section id="screen-settings" class="screen" aria-label="설정">
+      <div class="settings-card">
+        <h1>설정</h1>
+        <nav class="settings-menu" id="settingsMenu" aria-label="설정 메뉴"></nav>
+      </div>
+    </section>
+
     <section id="screen-lobby" class="screen" aria-label="로비">
       <div class="lobby-card">
         <h1>공정의 법정 · 로비</h1>
@@ -318,7 +346,7 @@
         <div class="col stage-col">
           <div class="top-chips">
             <span id="chipStone">환생석 : 1개 · 영기 0</span>
-            <span id="chipDays">환생문: 100일 · Day 1</span>
+            <span id="chipDays">환생문: 10일 · Day 1</span>
           </div>
           <div class="stage-frame" id="stageFrame">
             <div class="stage-speech" id="stageSpeech">
@@ -344,7 +372,7 @@
               <span class="icon">EMO</span>
               <span>
                 <strong id="lblEmotion">감정 들여다 보기</strong>
-                <span class="cost" id="costEmotion">법정시간 -60분 · 영력 -2</span>
+                <span class="cost" id="costEmotion">법정시간 -15분 · 영력 -2</span>
               </span>
             </button>
           </div>
@@ -390,6 +418,7 @@
         const ui = {
           screen: "title",
           titleIndex: 0,
+          settingsIndex: 0,
           tab: "events",
           listIndex: 0,
           actionIndex: 0,
@@ -402,13 +431,16 @@
 
         const titleItems = [
           { id: "start", label: "재판 시작" },
-          { id: "log", label: "로그 저장" },
+          { id: "settings", label: "설정" },
         ];
-        const menuItems = [
-          { id: "verdict", label: "판결하기" },
-          { id: "lobby", label: "로비로 나가기" },
-          { id: "title", label: "타이틀로" },
-        ];
+        function getMenuItems() {
+          return [
+            { id: "verdict", label: "판결하기" },
+            { id: "bgm", label: "BGM : " + (BGM.muted ? "OFF" : "ON") },
+            { id: "lobby", label: "로비로 나가기" },
+            { id: "title", label: "타이틀로" },
+          ];
+        }
         const endMenuItems = [
           { id: "next", label: "다음 재판하기" },
           { id: "title", label: "심판종료" },
@@ -434,6 +466,24 @@
             const s = window.GAME_CONFIG && window.GAME_CONFIG.systems && window.GAME_CONFIG.systems.bgm;
             return !s || s.enabled !== false;
           },
+          loadMute() {
+            try {
+              this.muted = localStorage.getItem("hellcourt_bgm_muted") === "1";
+            } catch (e) {
+              this.muted = false;
+            }
+          },
+          setMuted(on) {
+            this.muted = !!on;
+            try {
+              localStorage.setItem("hellcourt_bgm_muted", this.muted ? "1" : "0");
+            } catch (e) {}
+            if (this.muted) this.stop();
+          },
+          toggleMuted() {
+            this.setMuted(!this.muted);
+            return this.muted;
+          },
           stop() {
             if (this.audio) {
               this.audio.pause();
@@ -456,6 +506,7 @@
             if (p && p.catch) p.catch(function () {});
           },
         };
+        BGM.loadMute();
 
         function playSfx(kind) {
           const sys = window.GAME_CONFIG && window.GAME_CONFIG.systems;
@@ -488,7 +539,7 @@
 
         function showScreen(id) {
           ui.screen = id;
-          ["title", "lobby", "ingame", "verdict", "end"].forEach(function (name) {
+          ["title", "settings", "lobby", "ingame", "verdict", "end"].forEach(function (name) {
             document.getElementById("screen-" + name).classList.toggle("active", name === id);
           });
         }
@@ -506,6 +557,48 @@
         function setStage(main, sub) {
           document.getElementById("stageMain").textContent = main || "";
           document.getElementById("stageSub").textContent = sub || "";
+        }
+
+        function settingsItems() {
+          return [
+            { id: "bgm", label: "BGM : " + (BGM.muted ? "OFF" : "ON") },
+            { id: "back", label: "돌아가기" },
+          ];
+        }
+
+        function renderSettings() {
+          const menu = document.getElementById("settingsMenu");
+          const items = settingsItems();
+          menu.innerHTML = "";
+          if (ui.settingsIndex >= items.length) ui.settingsIndex = 0;
+          items.forEach(function (item, i) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "settings-item" + (i === ui.settingsIndex ? " selected" : "");
+            btn.textContent = item.label;
+            btn.addEventListener("click", function () {
+              ui.settingsIndex = i;
+              playSfx("select");
+              confirmSettings();
+            });
+            menu.appendChild(btn);
+          });
+          ui._settingsItems = items;
+        }
+
+        function confirmSettings() {
+          const items = ui._settingsItems || settingsItems();
+          const item = items[ui.settingsIndex];
+          if (!item) return;
+          playSfx("confirm");
+          if (item.id === "bgm") {
+            BGM.toggleMuted();
+            renderSettings();
+            toast(BGM.muted ? "BGM OFF" : "BGM ON");
+            return;
+          }
+          showScreen("title");
+          renderTitle();
         }
 
         function renderTitle() {
@@ -529,9 +622,10 @@
           playSfx("confirm");
           const item = titleItems[ui.titleIndex];
           if (!item) return;
-          if (item.id === "log") {
-            Game.downloadLog();
-            toast("로그를 저장했습니다.");
+          if (item.id === "settings") {
+            ui.settingsIndex = 0;
+            showScreen("settings");
+            renderSettings();
             return;
           }
           Game.startNewRun();
@@ -584,8 +678,11 @@
               "\n\n" + (L.timeExhaustedNeedDay || "법정시간이 소진되었습니다. 하루를 마쳐 회복하십시오.");
           }
           const spBal = (Game.balance().spirit || {});
+          const rbBal = (Game.balance().rebirth || {});
           const restoreCost = spBal.restoreCostEssence != null ? spBal.restoreCostEssence : 1;
           const restoreAmt = spBal.restoreAmount != null ? spBal.restoreAmount : 2;
+          const stoneCost = rbBal.stoneCostEssence != null ? rbBal.stoneCostEssence : 1;
+          const stoneAmt = rbBal.stoneBuyAmount != null ? rbBal.stoneBuyAmount : 1;
           const actions = [
             {
               id: "next",
@@ -596,6 +693,10 @@
             {
               id: "restore",
               label: "영력 회복 (+" + restoreAmt + " / " + (L.essence || "영기") + " -" + restoreCost + ")",
+            },
+            {
+              id: "buystone",
+              label: "환생석 구매 (+" + stoneAmt + " / " + (L.essence || "영기") + " -" + stoneCost + ")",
             },
             {
               id: "endday",
@@ -662,6 +763,18 @@
               return;
             }
             toast((L.spiritRestored || "영력을 회복했습니다.") + " (+" + r.amount + ")");
+            renderLobby();
+            return;
+          }
+          if (a.id === "buystone") {
+            const L = Game.labels();
+            const r = Game.buyRebirthStone();
+            if (!r.ok) {
+              toast(L.essenceLow || "영기가 부족합니다.");
+              renderLobby();
+              return;
+            }
+            toast((L.stoneBought || "환생석을 구입했습니다.") + " (+" + r.amount + ")");
             renderLobby();
             return;
           }
@@ -803,12 +916,16 @@
               "성별: " + (s.gender || "???") + "\n" +
               life + "\n" +
               "가치관: " + vals + "\n\n" +
-              (s.profileNote || "");
+              (s.profileNote
+                ? s.profileNote
+                : "이 망자에 대한 요약 기록이 없습니다.") +
+              "\n\n※ 요약은 참고용이며, 판결은 사실·감정 열람을 기준으로 하십시오.";
             list.appendChild(div);
             return;
           }
 
           document.getElementById("leftHint").textContent = "SELECT";
+          const menuItems = getMenuItems();
           ui.listIndex = Math.max(0, Math.min(ui.listIndex, menuItems.length - 1));
           menuItems.forEach(function (item, i) {
             const row = document.createElement("div");
@@ -898,10 +1015,16 @@
 
         function confirmMenu() {
           playSfx("confirm");
+          const menuItems = getMenuItems();
           const item = menuItems[ui.listIndex];
           if (!item) return;
           if (item.id === "verdict") openVerdict();
-          else if (item.id === "lobby") {
+          else if (item.id === "bgm") {
+            BGM.toggleMuted();
+            if (!BGM.muted) BGM.play("court");
+            toast(BGM.muted ? "BGM OFF" : "BGM ON");
+            refreshTrial();
+          } else if (item.id === "lobby") {
             Game.finishToLobby();
             showScreen("lobby");
             renderLobby();
@@ -1065,6 +1188,24 @@
             }
             return;
           }
+          if (ui.screen === "settings") {
+            const items = ui._settingsItems || settingsItems();
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.settingsIndex =
+                (ui.settingsIndex + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+              playSfx("select");
+              renderSettings();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              confirmSettings();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              showScreen("title");
+              renderTitle();
+            }
+            return;
+          }
           if (ui.screen === "lobby") {
             const n = (ui._lobbyActions || []).length;
             if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -1173,6 +1314,7 @@
               refreshTrial();
             }
           } else if (ui.tab === "menu") {
+            const menuItems = getMenuItems();
             if (e.key === "ArrowUp" || e.key === "ArrowDown") {
               e.preventDefault();
               ui.listIndex = (ui.listIndex + (e.key === "ArrowDown" ? 1 : -1) + menuItems.length) % menuItems.length;
