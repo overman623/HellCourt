@@ -57,6 +57,12 @@
         font-size: 0.85rem;
         letter-spacing: 0.08em;
       }
+      .panel-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
       .panel-body { padding: 0.75rem; }
 
       #screen-title {
@@ -300,6 +306,22 @@
         line-height: 1.45;
         max-height: 10.5rem;
         overflow: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(242,242,242,0.72) rgba(0,0,0,0.35);
+      }
+      .mini-list::-webkit-scrollbar {
+        width: 8px;
+      }
+      .mini-list::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.35);
+        border-left: 1px solid rgba(255,255,255,0.16);
+      }
+      .mini-list::-webkit-scrollbar-thumb {
+        background: rgba(242,242,242,0.72);
+        border: 1px solid rgba(0,0,0,0.6);
+      }
+      .mini-list::-webkit-scrollbar-thumb:hover {
+        background: #fff;
       }
       .scroll-focus.selected {
         outline: 2px solid var(--focus);
@@ -372,6 +394,12 @@
         background: var(--panel-soft);
         padding: 0.78rem 1rem;
         text-align: left;
+      }
+      .confirm-text {
+        color: var(--muted);
+        line-height: 1.55;
+        margin-bottom: 0.9rem;
+        white-space: pre-wrap;
       }
 
       #screen-end {
@@ -449,11 +477,11 @@
             <div class="panel-title">법정</div>
             <div class="panel-body hud">
               <div id="courtMeta"></div>
-              <div class="hud-row">
-                <span class="hud-label">남은 망자</span>
-                <span id="remainingValue">0명</span>
-              </div>
             </div>
+          </div>
+
+          <div class="panel" style="min-height:6rem" aria-label="빈 레이아웃">
+            <div class="panel-title">EMPTY</div>
           </div>
 
           <button type="button" class="action-btn" id="eventsBtn">
@@ -477,12 +505,15 @@
             </div>
           </div>
           <div class="hint">
-            <span>↑↓ 이동 · Enter 선택</span>
+            <span>↑↓ 이동 · Enter 선택 · Tab 전환</span>
             <span>1 사건 · Space 심문 · V 판결</span>
           </div>
         </aside>
 
         <main class="col" aria-label="COURT">
+          <div class="panel">
+            <div class="panel-body" id="trialSubject">재판 중: -</div>
+          </div>
           <div class="court-frame" id="courtFrame">
             <div class="court-caption">
               <div id="courtMain">망자가 법정에 섰다.</div>
@@ -491,7 +522,10 @@
           </div>
           <div class="court-bottom">
             <section class="panel">
-              <div class="panel-title">금일 망자</div>
+              <div class="panel-title panel-title-row">
+                <span>금일 망자</span>
+                <span id="remainingValue">남은 망자 0명</span>
+              </div>
               <div class="panel-body mini-list" id="todayList"></div>
             </section>
             <section class="panel">
@@ -550,6 +584,14 @@
       </div>
     </div>
 
+    <div class="modal-layer" id="verdictConfirmModal" aria-label="판결 확인 팝업">
+      <div class="menu-popup">
+        <div class="menu-popup-title">판결 확인</div>
+        <div class="confirm-text" id="verdictConfirmText"></div>
+        <nav class="popup-menu" id="verdictConfirmMenu"></nav>
+      </div>
+    </div>
+
     <div id="toast" role="status"></div>
 
     <script src="assets/data/game-config.js"></script>
@@ -571,6 +613,8 @@
           verdictIndex: 0,
           recordPage: 0,
           verdictChoice: "hell",
+          verdictConfirmOpen: false,
+          verdictConfirmIndex: 0,
           endIndex: 0,
           popupIndex: 0,
           menuOpen: false,
@@ -919,15 +963,37 @@
           return "기본 사건 공개";
         }
 
+        function interrogationCostLabel(ev) {
+          const s = Game.state;
+          const costs = Game.actionCosts();
+          if (!ev.contextRead) {
+            const short = s && s.courtTimeMinutes < costs.contextTime ? " · 시간 부족" : "";
+            return "소모 예정: " + formatCostMinutes(costs.contextTime) + short;
+          }
+          if (!ev.intentRead) {
+            const short = s && s.courtTimeMinutes < costs.intentTime ? " · 시간 부족" : "";
+            return "소모 예정: " + formatCostMinutes(costs.intentTime) + short;
+          }
+          return "소모 예정: 없음 · 심문 완료";
+        }
+
+        function verdictLabel(choice) {
+          return choice === "heaven" ? "무죄" : "유죄";
+        }
+
+        function verdictDescription(choice) {
+          return choice === "heaven"
+            ? "지옥으로 단죄하지 않고 천국으로 보냅니다."
+            : "삶의 책임을 단죄하고 지옥으로 보냅니다.";
+        }
+
         function renderEvents() {
           const s = Game.state;
           const ev = selectedEvent();
           const btn = document.getElementById("eventsBtn");
           const sub = document.getElementById("eventsSub");
           btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 0);
-          sub.textContent = ev
-            ? "현재 기록: " + (ev.year || "????") + " · " + ev.title
-            : "망자의 생애 기록을 열람합니다.";
+          sub.textContent = "망자의 생애 기록을 열람합니다.";
         }
 
         function renderActions() {
@@ -960,19 +1026,15 @@
 
         function renderCourt() {
           const s = Game.state;
-          const vals = (s.values || []).join(", ") || "-";
-          const life = (s.birthYear || "????") + " - " + (s.deathYear || "????") + (s.ageAtDeath != null ? " (" + s.ageAtDeath + "세)" : "");
           document.getElementById("courtMeta").textContent =
-            (s.courtName || "공정의 법정") + "\n" +
-            "재판 중: " + s.name + "\n" +
-            "생애: " + life + "\n" +
-            "가치관: " + vals;
-          document.getElementById("remainingValue").textContent = Game.remainingSouls() + "명";
+            s.courtName || "공정의 법정";
+          document.getElementById("trialSubject").textContent = "재판 중: " + s.name;
         }
 
         function renderCourtBottom() {
           const s = Game.state;
           const L = Game.labels();
+          document.getElementById("remainingValue").textContent = "남은 망자 " + Game.remainingSouls() + "명";
           document.getElementById("todayList").textContent = (s.today || []).map(function (row, i) {
             return (i + 1) + ". " + row.name + " · " +
               (row.verdict ? (row.verdict === "heaven" ? L.heaven : L.hell) : "미판결");
@@ -1001,8 +1063,10 @@
             if (ui.emptyMode === "verdict") {
               title.textContent = "판결 선택";
               page.textContent =
-                (ui.verdictIndex === 0 ? "▶ " : "  ") + "무죄\n\n" +
-                (ui.verdictIndex === 1 ? "▶ " : "  ") + "유죄";
+                (ui.verdictIndex === 0 ? "▶ " : "  ") + "무죄\n" +
+                "   " + verdictDescription("heaven") + "\n\n" +
+                (ui.verdictIndex === 1 ? "▶ " : "  ") + "유죄\n" +
+                "   " + verdictDescription("hell");
             } else {
               title.textContent = "EMPTY";
               page.textContent = "";
@@ -1013,7 +1077,7 @@
           page.textContent = s.events.map(function (ev, i) {
             const mark = i === ui.emptyIndex ? "▶ " : "  ";
             const current = i === ui.eventIndex ? " · 현재 선택" : "";
-            return mark + (i + 1) + ". " + (ev.year || "????") + " · " + ev.title + current + "\n   " + readLabel(ev);
+            return mark + (i + 1) + ". " + (ev.year || "????") + " · " + ev.title + current + "\n   " + readLabel(ev) + "\n   " + interrogationCostLabel(ev);
           }).join("\n\n");
         }
 
@@ -1043,7 +1107,7 @@
           const s = Game.state;
           if (ui.emptyMode === "verdict") {
             ui.verdictChoice = ui.verdictIndex === 0 ? "heaven" : "hell";
-            submitVerdictFromEmpty();
+            openVerdictConfirmPopup();
             return;
           }
           if (ui.emptyMode !== "interrogate" || !s || !s.events || !s.events.length) return;
@@ -1179,26 +1243,22 @@
           const ev = Game.getSelectedEvent();
           const btn = document.getElementById("interrogateBtn");
           const sub = document.getElementById("interrogateSub");
+          btn.disabled = false;
           if (!ev) {
-            btn.disabled = true;
             btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
             sub.textContent = "심문할 사건을 선택합니다";
             return;
           }
-          const costs = Game.actionCosts();
           if (!ev.contextRead) {
-            btn.disabled = !Game.canInvestigateContext();
             btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
             sub.textContent = "심문할 사건을 선택합니다";
             return;
           }
           if (!ev.intentRead) {
-            btn.disabled = !Game.canInvestigateIntent();
             btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
             sub.textContent = "심문할 사건을 선택합니다";
             return;
           }
-          btn.disabled = true;
           btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
           sub.textContent = "심문할 사건을 선택합니다";
         }
@@ -1291,6 +1351,55 @@
         function closeMenuPopup() {
           ui.menuOpen = false;
           document.getElementById("menuModal").classList.remove("active");
+        }
+
+        const verdictConfirmItems = [
+          { id: "confirm", label: "판결 확정" },
+          { id: "back", label: "다시 선택" },
+        ];
+
+        function renderVerdictConfirmPopup() {
+          const menu = document.getElementById("verdictConfirmMenu");
+          const label = verdictLabel(ui.verdictChoice);
+          document.getElementById("verdictConfirmText").textContent =
+            label + " 판결을 확정하시겠습니까?\n" + verdictDescription(ui.verdictChoice);
+          menu.innerHTML = "";
+          verdictConfirmItems.forEach(function (item, i) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "popup-item" + (i === ui.verdictConfirmIndex ? " selected" : "");
+            btn.textContent = item.label;
+            btn.addEventListener("click", function () {
+              ui.verdictConfirmIndex = i;
+              playSfx("select");
+              confirmVerdictConfirmPopup();
+            });
+            menu.appendChild(btn);
+          });
+        }
+
+        function openVerdictConfirmPopup() {
+          ui.verdictConfirmOpen = true;
+          ui.verdictConfirmIndex = 0;
+          renderVerdictConfirmPopup();
+          document.getElementById("verdictConfirmModal").classList.add("active");
+        }
+
+        function closeVerdictConfirmPopup() {
+          ui.verdictConfirmOpen = false;
+          document.getElementById("verdictConfirmModal").classList.remove("active");
+        }
+
+        function confirmVerdictConfirmPopup() {
+          const item = verdictConfirmItems[ui.verdictConfirmIndex];
+          if (!item) return;
+          playSfx("confirm");
+          if (item.id === "back") {
+            closeVerdictConfirmPopup();
+            return;
+          }
+          closeVerdictConfirmPopup();
+          submitVerdictFromEmpty();
         }
 
         function confirmMenuPopup() {
@@ -1439,6 +1548,9 @@
         document.getElementById("menuModal").addEventListener("click", function (e) {
           if (e.target.id === "menuModal") closeMenuPopup();
         });
+        document.getElementById("verdictConfirmModal").addEventListener("click", function (e) {
+          if (e.target.id === "verdictConfirmModal") closeVerdictConfirmPopup();
+        });
         document.getElementById("profileBox").addEventListener("click", function () {
           ui.focusArea = "profile";
           playSfx("select");
@@ -1454,6 +1566,21 @@
         });
 
         document.addEventListener("keydown", function (e) {
+          if (ui.verdictConfirmOpen) {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.verdictConfirmIndex = (ui.verdictConfirmIndex + (e.key === "ArrowDown" ? 1 : -1) + verdictConfirmItems.length) % verdictConfirmItems.length;
+              playSfx("select");
+              renderVerdictConfirmPopup();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              confirmVerdictConfirmPopup();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              closeVerdictConfirmPopup();
+            }
+            return;
+          }
           if (ui.menuOpen) {
             if (e.key === "ArrowUp" || e.key === "ArrowDown") {
               e.preventDefault();
