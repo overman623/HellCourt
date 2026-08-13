@@ -330,8 +330,8 @@
       paths: {
         titleBg: "assets/images/ui/TitleBG.png",
         ingameBg: "assets/images/ui/IngameBG.png",
-        verdictHell: "assets/images/ui/verdictHell.png",
-        verdictHeaven: "assets/images/ui/verdictHeaven.png",
+        verdictHell: "assets/images/ui/VerdictGuilty.png",
+        verdictHeaven: "assets/images/ui/VerdictInnocent.png",
         stageSoul: "assets/images/ui/StageSoul.png",
       },
     },

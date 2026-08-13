@@ -94,20 +94,27 @@
         cursor: default;
       }
 
-      #screen-settings, #screen-lobby, #screen-verdict {
+      #screen-settings, #screen-lobby, #screen-verdict, #screen-expedite {
         background: #050505;
         padding: 2rem;
       }
-      .settings-card, .lobby-card, .verdict-card {
+      .settings-card, .lobby-card, .verdict-card, .expedite-card {
         width: min(860px, 94vw);
         border: 1px solid var(--line);
         background: var(--panel);
         padding: 1.25rem;
       }
-      .settings-card h1, .lobby-card h1, .verdict-card h2 {
+      .settings-card h1, .lobby-card h1, .verdict-card h2, .expedite-card h2 {
         margin: 0 0 1rem;
         font-size: 1.35rem;
         letter-spacing: 0.08em;
+      }
+      .expedite-body {
+        white-space: pre-wrap;
+        line-height: 1.55;
+        min-height: 8rem;
+        margin-bottom: 1rem;
+        color: var(--muted);
       }
       .lobby-meta, .lobby-summary {
         white-space: pre-wrap;
@@ -240,6 +247,69 @@
         background-position: center top;
         background-size: cover;
         background-repeat: no-repeat;
+        position: relative;
+        overflow: hidden;
+      }
+      .player-bubble,
+      .soul-bubble {
+        position: absolute;
+        width: min(520px, 72%);
+        border: 1px solid rgba(255,255,255,0.76);
+        background: rgba(0,0,0,0.86);
+        padding: 0.85rem 1rem;
+        line-height: 1.55;
+        color: var(--text);
+        opacity: 0;
+        pointer-events: none;
+        white-space: pre-wrap;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.55), 0 18px 42px rgba(0,0,0,0.42);
+      }
+      .player-bubble {
+        left: 8%;
+        bottom: 9.2rem;
+        transform: translate(-12px, 8px);
+        width: min(420px, 58%);
+      }
+      .soul-bubble {
+        left: 50%;
+        top: 16%;
+        transform: translate(-50%, 12px);
+      }
+      .player-bubble::after,
+      .soul-bubble::after {
+        content: "";
+        position: absolute;
+        bottom: -9px;
+        width: 16px;
+        height: 16px;
+        border-right: 1px solid rgba(255,255,255,0.76);
+        border-bottom: 1px solid rgba(255,255,255,0.76);
+        background: rgba(0,0,0,0.86);
+      }
+      .player-bubble::after {
+        left: 24%;
+        transform: rotate(45deg);
+      }
+      .soul-bubble::after {
+        left: 50%;
+        transform: translateX(-50%) rotate(45deg);
+      }
+      .player-bubble.show {
+        animation: playerQuestion 1.55s ease both;
+      }
+      .soul-bubble.show {
+        animation: bubbleReveal 3.6s ease both;
+      }
+      .player-bubble.context,
+      .soul-bubble.context {
+        border-color: rgba(159,209,255,0.88);
+      }
+      .player-bubble.intent,
+      .soul-bubble.intent {
+        border-color: rgba(255,212,142,0.9);
+      }
+      .court-frame.pulse {
+        animation: courtPulse 0.7s ease both;
       }
       .court-caption {
         min-height: 8rem;
@@ -289,6 +359,9 @@
       .record-box.selected {
         outline: 2px solid var(--focus);
         outline-offset: -2px;
+      }
+      .record-box.updated {
+        animation: recordUpdated 0.9s ease both;
       }
       .record-empty { color: var(--muted); padding: 0.75rem; }
       .court-bottom {
@@ -431,6 +504,29 @@
       }
       #toast.show { opacity: 1; }
 
+      @keyframes bubbleReveal {
+        0% { opacity: 0; transform: translate(-50%, 16px) scale(0.98); }
+        12% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        82% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        100% { opacity: 0; transform: translate(-50%, -8px) scale(0.99); }
+      }
+      @keyframes playerQuestion {
+        0% { opacity: 0; transform: translate(-12px, 12px) scale(0.98); }
+        16% { opacity: 1; transform: translate(0, 0) scale(1); }
+        78% { opacity: 1; transform: translate(0, 0) scale(1); }
+        100% { opacity: 0; transform: translate(8px, -4px) scale(0.99); }
+      }
+      @keyframes courtPulse {
+        0% { box-shadow: inset 0 0 0 rgba(255,255,255,0); }
+        35% { box-shadow: inset 0 0 38px rgba(255,255,255,0.22); }
+        100% { box-shadow: inset 0 0 0 rgba(255,255,255,0); }
+      }
+      @keyframes recordUpdated {
+        0% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+        35% { box-shadow: 0 0 0 2px rgba(255,255,255,0.9), 0 0 28px rgba(159,209,255,0.28); }
+        100% { box-shadow: 0 0 0 rgba(255,255,255,0); }
+      }
+
       @media (max-width: 980px) {
         html, body { overflow: auto; }
         .screen { min-height: 100%; position: relative; }
@@ -515,6 +611,8 @@
             <div class="panel-body" id="trialSubject">재판 중: -</div>
           </div>
           <div class="court-frame" id="courtFrame">
+            <div class="player-bubble" id="playerBubble"></div>
+            <div class="soul-bubble" id="soulBubble"></div>
             <div class="court-caption">
               <div id="courtMain">망자가 법정에 섰다.</div>
               <div class="sub" id="courtSub"></div>
@@ -566,13 +664,22 @@
       </div>
     </section>
 
+    <section id="screen-expedite" class="screen" aria-label="간이 판결">
+      <div class="expedite-card">
+        <h2>간이 판결</h2>
+        <div class="expedite-body" id="expediteBody"></div>
+        <div class="verdict-choices">
+          <button type="button" class="verdict-choice heaven" data-expedite="heaven">무죄</button>
+          <button type="button" class="verdict-choice hell" data-expedite="hell">유죄</button>
+        </div>
+      </div>
+    </section>
+
     <section id="screen-end" class="screen" aria-label="판결 결과">
       <div class="end-overlay">
         <div id="endTitle" style="font-size:1.55rem;letter-spacing:0.1em;margin-bottom:0.5rem"></div>
         <div id="endSub" style="color:var(--muted);line-height:1.45"></div>
         <nav class="end-menu" id="endMenu" aria-label="판결 후 메뉴">
-          <button type="button" class="end-menu-item selected" data-end="next">로비로</button>
-          <button type="button" class="end-menu-item" data-end="title">심판종료</button>
         </nav>
       </div>
     </section>
@@ -615,10 +722,13 @@
           verdictChoice: "hell",
           verdictConfirmOpen: false,
           verdictConfirmIndex: 0,
+          expediteIndex: 0,
+          expediteChoice: "heaven",
           endIndex: 0,
           popupIndex: 0,
           menuOpen: false,
           settingsReturn: "title",
+          unlockTimers: [],
         };
 
         const titleItems = [
@@ -628,7 +738,7 @@
 
         function showScreen(name) {
           ui.screen = name;
-          ["title", "settings", "lobby", "ingame", "verdict", "end"].forEach(function (s) {
+          ["title", "settings", "lobby", "ingame", "verdict", "expedite", "end"].forEach(function (s) {
             document.getElementById("screen-" + s).classList.toggle("active", s === name);
           });
         }
@@ -793,8 +903,10 @@
           if (!s || s.phase !== "lobby") return;
           const L = Game.labels();
           const remaining = s.today.filter(function (row) { return !row.verdict; }).length;
+          const dutyDays = 100;
+          const daysLeft = Math.max(0, dutyDays - s.day);
           document.getElementById("lobbyMeta").textContent =
-            "Day " + s.day +
+            "Day " + s.day + " / " + dutyDays + " · 남은 근무일 " + daysLeft + "일" +
             " · 남은 법정시간 " + Game.formatCourtTime(s.courtTimeMinutes) +
             " · 금일 남은 망자 " + remaining + "/" + s.today.length;
 
@@ -1213,6 +1325,47 @@
           document.getElementById("courtSub").textContent = sub || "";
         }
 
+        function previewAnswer(text) {
+          const value = String(text || "").replace(/\s+/g, " ").trim();
+          if (!value) return "...";
+          return value.length > 94 ? value.slice(0, 94) + "..." : value;
+        }
+
+        function interrogationQuestion(type, eventTitle) {
+          if (type === "context") {
+            return "이 사건에 숨겨진 사실을 말해라.\n" + (eventTitle || "");
+          }
+          return "그때 네 감정과 의도는 무엇이었지?\n" + (eventTitle || "");
+        }
+
+        function clearUnlockTimers() {
+          while (ui.unlockTimers.length) clearTimeout(ui.unlockTimers.pop());
+        }
+
+        function showUnlockEffect(type, text, eventTitle) {
+          clearUnlockTimers();
+          const player = document.getElementById("playerBubble");
+          const bubble = document.getElementById("soulBubble");
+          const frame = document.getElementById("courtFrame");
+          const record = document.getElementById("recordBox");
+          player.textContent = "“" + interrogationQuestion(type, eventTitle) + "”";
+          player.className = "player-bubble " + type;
+          bubble.textContent = "";
+          bubble.className = "soul-bubble " + type;
+          frame.classList.remove("pulse");
+          record.classList.remove("updated");
+          void player.offsetWidth;
+          player.classList.add("show");
+          ui.unlockTimers.push(setTimeout(function () {
+            bubble.textContent = "“" + previewAnswer(text) + "”";
+            bubble.className = "soul-bubble " + type;
+            void bubble.offsetWidth;
+            bubble.classList.add("show");
+          }, 1050));
+          frame.classList.add("pulse");
+          record.classList.add("updated");
+        }
+
         function refreshTrial(fresh) {
           const s = Game.state;
           if (!s || s.phase !== "trial") return;
@@ -1274,6 +1427,7 @@
           ui.recordPage = ui.eventIndex * 3 + 1;
           setCourtText("CONTEXT 조사", r.event.title);
           refreshTrial();
+          showUnlockEffect("context", r.text, r.event.title);
         }
 
         function doIntent() {
@@ -1288,6 +1442,7 @@
           ui.recordPage = ui.eventIndex * 3 + 2;
           setCourtText("감정과 의도 확인", r.event.title);
           refreshTrial();
+          showUnlockEffect("intent", r.text, r.event.title);
         }
 
         function doInterrogate() {
@@ -1457,8 +1612,80 @@
           showScreen("end");
         }
 
+        function resetTrialUi() {
+          ui.eventIndex = 0;
+          ui.focusArea = "actions";
+          ui.actionIndex = 0;
+          ui.emptyMode = "blank";
+          ui.emptyIndex = 0;
+          ui.recordPage = 0;
+        }
+
+        function startNextTrial() {
+          const started = Game.startTrial();
+          if (!started) {
+            showLobbyFromEnd();
+            return;
+          }
+          resetTrialUi();
+          showScreen("ingame");
+          refreshTrial(true);
+        }
+
+        function showLobbyFromEnd() {
+          Game.finishToLobby();
+          showScreen("lobby");
+          renderLobby();
+          BGM.play("court");
+        }
+
+        function shouldExpediteVerdicts() {
+          return Game.remainingSouls() > 0 && (Game.courtTimeMinutes || 0) <= 0;
+        }
+
+        function showExpedite() {
+          ui.expediteIndex = 0;
+          ui.expediteChoice = "heaven";
+          renderExpedite();
+          showScreen("expedite");
+        }
+
+        function renderExpedite() {
+          const rows = Game.remainingSoulRows();
+          const row = rows[0];
+          if (!row) {
+            showLobbyFromEnd();
+            return;
+          }
+          document.getElementById("expediteBody").textContent =
+            "법정시간이 종료되었습니다.\n남은 망자는 정식 심문 없이 간이 판결로 처리합니다.\n\n" +
+            "대상: " + row.name + "\n" +
+            (row.summary || "프로필 요약이 없습니다.") + "\n\n" +
+            "남은 망자: " + rows.length + "명";
+          document.querySelectorAll("[data-expedite]").forEach(function (btn) {
+            const choice = btn.getAttribute("data-expedite");
+            btn.classList.toggle("selected", choice === ui.expediteChoice);
+          });
+        }
+
+        function submitExpediteVerdict() {
+          const row = Game.remainingSoulRows()[0];
+          if (!row) {
+            showLobbyFromEnd();
+            return;
+          }
+          const r = Game.quickSubmitVerdict(row.index, ui.expediteChoice, "법정시간 종료 후 간이 판결");
+          if (!r.ok) return;
+          playSfx("confirm");
+          if (Game.remainingSouls() > 0) {
+            renderExpedite();
+            return;
+          }
+          showLobbyFromEnd();
+        }
+
         function renderVerdictChoices() {
-          document.querySelectorAll(".verdict-choice").forEach(function (btn) {
+          document.querySelectorAll("[data-choice]").forEach(function (btn) {
             btn.classList.toggle("selected", btn.getAttribute("data-choice") === ui.verdictChoice);
           });
         }
@@ -1488,15 +1715,31 @@
         }
 
         function renderEndMenu() {
-          const buttons = document.querySelectorAll("#endMenu .end-menu-item");
+          const menu = document.getElementById("endMenu");
+          const remaining = Game.remainingSouls();
+          const nextLabel = shouldExpediteVerdicts()
+            ? "남은 망자 간이 판결"
+            : remaining > 0
+              ? "다음 재판으로"
+              : "로비로";
           const items = [
-            { id: "lobby", label: "로비로" },
+            { id: "continue", label: nextLabel },
             { id: "title", label: "심판종료" },
           ];
           ui._endItems = items;
-          buttons.forEach(function (btn, i) {
-            btn.textContent = items[i].label;
-            btn.classList.toggle("selected", i === ui.endIndex);
+          menu.innerHTML = "";
+          items.forEach(function (item, i) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "end-menu-item" + (i === ui.endIndex ? " selected" : "");
+            btn.textContent = item.label;
+            btn.addEventListener("click", function () {
+              ui.endIndex = i;
+              playSfx("select");
+              renderEndMenu();
+              confirmEnd();
+            });
+            menu.appendChild(btn);
           });
         }
 
@@ -1511,10 +1754,15 @@
             renderTitle();
             return;
           }
-          Game.finishToLobby();
-          showScreen("lobby");
-          renderLobby();
-          BGM.play("court");
+          if (shouldExpediteVerdicts()) {
+            showExpedite();
+            return;
+          }
+          if (Game.remainingSouls() > 0) {
+            startNextTrial();
+            return;
+          }
+          showLobbyFromEnd();
         }
 
         function escapeHtml(value) {
@@ -1525,11 +1773,19 @@
             .replace(/"/g, "&quot;");
         }
 
-        document.querySelectorAll(".verdict-choice").forEach(function (btn) {
+        document.querySelectorAll("[data-choice]").forEach(function (btn) {
           btn.addEventListener("click", function () {
             ui.verdictChoice = btn.getAttribute("data-choice");
             playSfx("select");
             renderVerdictChoices();
+          });
+        });
+        document.querySelectorAll("[data-expedite]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            ui.expediteChoice = btn.getAttribute("data-expedite");
+            playSfx("select");
+            renderExpedite();
+            submitExpediteVerdict();
           });
         });
         document.getElementById("verdictSubmit").addEventListener("click", submitVerdict);
@@ -1555,6 +1811,18 @@
           ui.focusArea = "profile";
           playSfx("select");
           refreshTrial();
+        });
+        document.getElementById("playerBubble").addEventListener("animationend", function () {
+          this.classList.remove("show");
+        });
+        document.getElementById("soulBubble").addEventListener("animationend", function () {
+          this.classList.remove("show");
+        });
+        document.getElementById("courtFrame").addEventListener("animationend", function () {
+          this.classList.remove("pulse");
+        });
+        document.getElementById("recordBox").addEventListener("animationend", function () {
+          this.classList.remove("updated");
         });
         document.querySelectorAll("#endMenu .end-menu-item").forEach(function (btn, i) {
           btn.addEventListener("click", function () {
@@ -1657,6 +1925,18 @@
               Game.state.phase = "trial";
               showScreen("ingame");
               refreshTrial();
+            }
+            return;
+          }
+          if (ui.screen === "expedite") {
+            if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              ui.expediteChoice = ui.expediteChoice === "hell" ? "heaven" : "hell";
+              playSfx("select");
+              renderExpedite();
+            } else if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              submitExpediteVerdict();
             }
             return;
           }

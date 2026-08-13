@@ -289,6 +289,12 @@
       this.bootDay();
       return this.today.filter(function (s) { return !s.verdict; }).length;
     },
+    remainingSoulRows() {
+      this.bootDay();
+      return this.today.filter(function (s) { return !s.verdict; }).map(function (s) {
+        return Object.assign({}, s);
+      });
+    },
     allSoulsJudged() {
       return this.remainingSouls() === 0;
     },
@@ -442,6 +448,35 @@
       s.lastSummary = summary;
       Log.push("verdict_submit", summary);
       return { ok: true, verdict: s.verdict, summary: summary };
+    },
+    quickSubmitVerdict(soulIndex, choice, reason) {
+      this.bootDay();
+      if (choice !== "heaven" && choice !== "hell") return { ok: false, reason: "bad_choice" };
+      const row = this.today.find(function (item) { return item.index === soulIndex; });
+      if (!row || row.verdict) return { ok: false, reason: "no_soul" };
+      const soul = normalizeSoul(souls()[soulIndex], soulIndex);
+      row.verdict = choice;
+      const summary = {
+        day: this.day,
+        soulId: soul.id,
+        soulIndex: soulIndex,
+        deceasedName: soul.name,
+        choice: choice,
+        reason: reason || "법정시간 종료 후 간이 판결",
+        eventCount: soul.events.length,
+        contextRead: 0,
+        intentRead: 0,
+        courtTimeMinutesLeft: this.courtTimeMinutes || 0,
+        courtTimeLeftLabel: formatMinutes(this.courtTimeMinutes || 0),
+        values: soul.values.slice(),
+        tendencyTags: soul.tendencyTags.slice(),
+        record: [],
+        quick: true,
+      };
+      this.verdictHistory.push(summary);
+      if (this.state) this.state.lastSummary = summary;
+      Log.push("quick_verdict_submit", summary);
+      return { ok: true, summary: summary };
     },
     finishToLobby() {
       const summary = this.state && this.state.lastSummary;
