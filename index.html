@@ -1006,7 +1006,7 @@
                     <img class="record-page-decoration" src="assets/images/ui/page_left.png" alt="">
                     <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
                   </div>
-                  <div class="record-page-info" id="recordPageInfo">PAGE</div>
+                  <div class="record-page-info" id="recordPageInfo">PAGE 0</div>
                   <div class="record-page-side is-right" aria-hidden="true">
                     <img class="record-page-decoration" src="assets/images/ui/page_right.png" alt="">
                     <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
@@ -1713,6 +1713,7 @@
           const page = pages[ui.recordPage];
           document.getElementById("recordBox").classList.toggle("selected", ui.focusArea === "record");
           document.getElementById("recordPageCount").textContent = (ui.recordPage + 1) + "/" + pages.length;
+          document.getElementById("recordPageInfo").textContent = "PAGE " + (ui.recordPage + 1);
           document.getElementById("recordPage").textContent = page.text;
         }
 
