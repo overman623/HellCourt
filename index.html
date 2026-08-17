@@ -453,6 +453,15 @@
       .record-box > .record-page-info {
         background: transparent;
       }
+      .record-box > .panel-title {
+        border: 8px solid transparent;
+        border-image-source: url("assets/images/ui/notes_frame.png");
+        border-image-slice: 8 fill;
+        border-image-width: 8px;
+        border-image-repeat: stretch;
+        background: transparent;
+        image-rendering: pixelated;
+      }
       .right-stack { gap: 0.65rem; }
       .record-list {
         white-space: pre-wrap;
@@ -476,6 +485,8 @@
           #7e7d7d calc(1.55em - 1px),
           #7e7d7d 1.55em
         );
+        background-origin: content-box;
+        background-clip: content-box;
         background-attachment: local;
       }
       .record-page-info {
