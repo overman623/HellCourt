@@ -88,7 +88,21 @@
       }
       .panel-action-spacer {
         border: none;
-        background: transparent;
+        background: var(--panel);
+        flex: 0 0 auto;
+        min-height: 6rem;
+        max-height: 8rem;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .panel-action-spacer .court-caption {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
       #courtMeta {
         font-size: 1rem;
@@ -414,7 +428,7 @@
         border-image-repeat: stretch;
         background-color: rgba(0,0,0,0.48);
         background-image: var(--stage-art, none);
-        background-position: center top;
+        background-position: center 12%;
         background-size: cover;
         background-repeat: no-repeat;
         background-clip: padding-box;
@@ -438,7 +452,7 @@
       }
       .player-bubble {
         left: 8%;
-        bottom: 9.2rem;
+        bottom: 1.5rem;
         transform: translate(-12px, 8px);
         width: min(420px, 58%);
       }
@@ -484,9 +498,9 @@
         animation: courtPulse 0.7s ease both;
       }
       .court-caption {
-        min-height: 8rem;
-        padding: 1rem;
-        background: linear-gradient(transparent, rgba(0,0,0,0.9) 30%);
+        min-height: 0;
+        padding: 0.65rem 0.35rem;
+        background: transparent;
         white-space: pre-wrap;
         line-height: 1.55;
       }
@@ -1012,6 +1026,17 @@
         margin-bottom: 0.9rem;
         white-space: pre-wrap;
       }
+      #verdictConfirmModal .menu-popup {
+        border-color: #ffffff;
+      }
+      #verdictConfirmModal .menu-popup-title,
+      #verdictConfirmModal .confirm-text,
+      #verdictConfirmModal .popup-item {
+        color: #ffffff;
+      }
+      #verdictConfirmModal .popup-item {
+        border-color: #ffffff;
+      }
 
       #screen-end {
         justify-content: flex-end;
@@ -1115,7 +1140,12 @@
             <div class="panel-body hud" id="courtMeta">염라의 법정</div>
           </div>
 
-          <div class="panel panel-action-spacer" style="min-height:6rem" aria-hidden="true"></div>
+          <div class="panel panel-action-spacer" aria-label="법정 대사">
+            <div class="court-caption">
+              <div id="courtMain">망자가 법정에 섰다.</div>
+              <div class="sub" id="courtSub"></div>
+            </div>
+          </div>
 
           <div class="action-panel" id="actionPanel" aria-label="행동 메뉴">
             <button type="button" class="action-btn" id="eventsBtn">
@@ -1163,10 +1193,6 @@
           <div class="court-frame" id="courtFrame">
             <div class="player-bubble" id="playerBubble"></div>
             <div class="soul-bubble" id="soulBubble"></div>
-            <div class="court-caption">
-              <div id="courtMain">망자가 법정에 섰다.</div>
-              <div class="sub" id="courtSub"></div>
-            </div>
           </div>
           <div class="court-info-drawer" id="courtInfoDrawer" aria-hidden="true">
             <section class="panel" id="todayPanel" aria-label="금일 망자 상세정보" hidden>
