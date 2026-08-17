@@ -288,6 +288,27 @@
         min-height: 0;
       }
       .action-list { display: flex; flex-direction: column; gap: 0.45rem; }
+      .action-panel {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        min-height: 0;
+        border: 12px solid transparent;
+        border-image-source: url("assets/images/ui/court_info_frame.png");
+        border-image-slice: 16;
+        border-image-width: 12px;
+        border-image-repeat: stretch;
+        background-color: #000;
+        background-clip: border-box;
+        padding: 0.4rem;
+        image-rendering: pixelated;
+      }
+      .action-panel.selected {
+        outline: none;
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+      }
       /* 모서리가 잘린 프레임 이미지를 9-slice로 늘려 버튼 테두리로 사용 */
       .action-btn {
         display: flex;
@@ -1076,23 +1097,25 @@
 
           <div class="panel panel-action-spacer" style="min-height:6rem" aria-hidden="true"></div>
 
-          <button type="button" class="action-btn" id="eventsBtn">
-            <img class="action-icon" src="assets/images/ui/icon_events.png" alt="" aria-hidden="true">
-            <span class="action-copy">
-              인생사건
-              <span class="sub" id="eventsSub">망자의 생애 기록을 열람합니다.</span>
-            </span>
-          </button>
+          <div class="action-panel" id="actionPanel" aria-label="행동 메뉴">
+            <button type="button" class="action-btn" id="eventsBtn">
+              <img class="action-icon" src="assets/images/ui/icon_events.png" alt="" aria-hidden="true">
+              <span class="action-copy">
+                인생사건
+                <span class="sub" id="eventsSub">망자의 생애 기록을 열람합니다.</span>
+              </span>
+            </button>
 
-          <button type="button" class="action-btn" id="interrogateBtn">
-            <img class="action-icon" src="assets/images/ui/icon_interrogate.png" alt="" aria-hidden="true">
-            <span class="action-copy">
-              심문하기
-              <span class="sub" id="interrogateSub">심문할 사건을 선택합니다</span>
-            </span>
-          </button>
+            <button type="button" class="action-btn" id="interrogateBtn">
+              <img class="action-icon" src="assets/images/ui/icon_interrogate.png" alt="" aria-hidden="true">
+              <span class="action-copy">
+                심문하기
+                <span class="sub" id="interrogateSub">심문할 사건을 선택합니다</span>
+              </span>
+            </button>
 
-          <div class="action-list" id="actionList"></div>
+            <div class="action-list" id="actionList"></div>
+          </div>
           <div class="panel panel-court-time">
             <div class="panel-title">
               <span class="panel-title-label">
@@ -1672,6 +1695,11 @@
             : "삶의 책임을 단죄하고 지옥으로 보냅니다.";
         }
 
+        function renderActionPanel() {
+          const panel = document.getElementById("actionPanel");
+          if (panel) panel.classList.toggle("selected", ui.focusArea === "actions");
+        }
+
         function isActionSelected(id, index) {
           if (ui.focusArea === "actions" && ui.actionIndex === index) return true;
           if (id === "events" && ui.emptyMode === "events") return true;
@@ -2047,6 +2075,7 @@
           renderEvents();
           renderActions();
           renderInterrogate();
+          renderActionPanel();
           renderEmpty();
           renderRecord();
           if (fresh) {
