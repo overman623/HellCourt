@@ -333,6 +333,7 @@
         verdictHell: "assets/images/ui/VerdictGuilty.png",
         verdictHeaven: "assets/images/ui/VerdictInnocent.png",
         stageSoul: "assets/images/ui/StageSoul.png",
+        stageSoul2: "assets/images/ui/StageSoul_2.png",
       },
     },
     audio: {

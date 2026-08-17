@@ -237,6 +237,7 @@
         background: #050505;
       }
       .ingame-backdrop {
+        position: relative;
         flex: 1;
         min-height: 0;
         width: auto;
@@ -247,13 +248,27 @@
         box-sizing: border-box;
         margin: 0.85rem;
         padding: 0;
-        background: var(--ingame-bg, #050505) center / cover no-repeat;
+        background: #050505;
         border: 32px solid transparent;
         border-image-source: url("assets/images/ui/ingame_frame.png");
         border-image-slice: 40;
         border-image-width: 32px;
         border-image-repeat: stretch;
         image-rendering: pixelated;
+      }
+      .ingame-backdrop::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: var(--ingame-bg, none) center / cover no-repeat;
+        opacity: 0.3;
+        pointer-events: none;
+        image-rendering: pixelated;
+      }
+      .ingame-backdrop > * {
+        position: relative;
+        z-index: 1;
       }
       .trial-shell {
         flex: 1;
@@ -283,20 +298,24 @@
       }
       .hud-row {
         display: flex;
-        align-items: center;
+        align-items: stretch;
         gap: 0.5rem;
       }
       .hud-label { color: var(--muted); min-width: 4.5rem; }
       .seg-track {
         flex: 1;
         display: flex;
+        align-items: stretch;
         gap: 4px;
       }
       .seg {
-        flex: 1;
-        height: 10px;
+        flex: 1 1 0;
+        min-width: 0;
+        aspect-ratio: 1 / 1;
+        height: auto;
         border: 1px solid rgba(255,255,255,0.22);
         background: rgba(255,255,255,0.1);
+        box-sizing: border-box;
       }
       .seg.on {
         border-color: #fff;
@@ -436,9 +455,33 @@
         overflow: hidden;
         image-rendering: pixelated;
       }
+      .court-soul {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background-image: url("assets/images/ui/soul_ghost.png");
+        background-position: center 48%;
+        background-size: auto 50%;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        image-rendering: pixelated;
+      }
+      .court-frame-cover {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background-image: var(--stage-art-cover, none);
+        background-position: center 12%;
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-color: transparent;
+        pointer-events: none;
+        image-rendering: pixelated;
+      }
       .player-bubble,
       .soul-bubble {
         position: absolute;
+        z-index: 2;
         width: min(520px, 72%);
         border: 1px solid rgba(255,255,255,0.76);
         background: rgba(0,0,0,0.86);
@@ -842,7 +885,7 @@
       .court-info-btn {
         position: relative;
         width: 100%;
-        min-height: 3rem;
+        min-height: 4.5rem;
         border: 10px solid transparent;
         border-image-source: url("assets/images/ui/btn_frame_fill.png");
         border-image-slice: 10 fill;
@@ -953,12 +996,21 @@
       }
       .hint {
         display: flex;
-        justify-content: space-between;
-        gap: 1rem;
+        flex-direction: column;
+        gap: 0.25rem;
         margin-top: auto;
-        color: var(--muted);
+        padding: 0.55rem 0.7rem;
+        background: #0a0a0a;
+        color: #ffffff;
         font-size: 0.78rem;
         line-height: 1.35;
+      }
+      .hint span {
+        display: block;
+      }
+      .hint b {
+        font-weight: 700;
+        color: #ffffff;
       }
 
       .verdict-warn {
@@ -1167,8 +1219,10 @@
             <div class="action-list" id="actionList"></div>
           </div>
           <div class="hint">
-            <span>↑↓ 메뉴 · Enter 선택 · Tab/클릭 영역</span>
-            <span>1 사건 · Space 심문 · V 판결</span>
+            <span><b>Tab</b> 영역 이동 · <b>Shift+Tab</b> 역순</span>
+            <span><b>방향키</b> 항목 이동 · <b>Enter</b> 선택</span>
+            <span><b>1</b> 인생사건 · <b>Space</b> 심문 · <b>V</b> 판결</span>
+            <span><b>Esc</b> 닫기 / 취소</span>
           </div>
           <div class="panel panel-court-time">
             <div class="panel-title">
@@ -1191,6 +1245,8 @@
             <div class="panel-body" id="trialSubject">재판 중: -</div>
           </div>
           <div class="court-frame" id="courtFrame">
+            <div class="court-soul" id="courtSoul" aria-hidden="true"></div>
+            <div class="court-frame-cover" id="courtFrameCover" aria-hidden="true"></div>
             <div class="player-bubble" id="playerBubble"></div>
             <div class="soul-bubble" id="soulBubble"></div>
           </div>
@@ -1437,6 +1493,7 @@
           if (art.titleBg) document.documentElement.style.setProperty("--title-bg", 'url("' + art.titleBg + '")');
           if (art.ingameBg) document.documentElement.style.setProperty("--ingame-bg", 'url("' + art.ingameBg + '")');
           if (art.stageSoul) document.documentElement.style.setProperty("--stage-art", 'url("' + art.stageSoul + '")');
+          if (art.stageSoul2) document.documentElement.style.setProperty("--stage-art-cover", 'url("' + art.stageSoul2 + '")');
         }
 
         function renderTitle() {
