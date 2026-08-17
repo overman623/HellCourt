@@ -72,11 +72,15 @@
         border-image-width: 14px;
         border-image-repeat: stretch;
         background-color: #000;
-        background-clip: padding-box;
+        background-clip: border-box;
         image-rendering: pixelated;
       }
       .panel-court-name .panel-body {
         padding: 0.55rem 0.75rem;
+      }
+      .panel-action-spacer {
+        border: none;
+        background: transparent;
       }
       #courtMeta {
         font-size: 1rem;
@@ -92,7 +96,7 @@
         border-image-width: 12px;
         border-image-repeat: stretch;
         background-color: #000;
-        background-clip: padding-box;
+        background-clip: border-box;
         image-rendering: pixelated;
       }
       .panel-trial-subject .panel-body {
@@ -107,7 +111,7 @@
         border-image-width: 12px;
         border-image-repeat: stretch;
         background-color: #000;
-        background-clip: padding-box;
+        background-clip: border-box;
         image-rendering: pixelated;
       }
       .panel-court-time .panel-title {
@@ -210,7 +214,26 @@
       #screen-ingame {
         align-items: stretch;
         justify-content: stretch;
+        background: #050505;
+      }
+      .ingame-backdrop {
+        flex: 1;
+        min-height: 0;
+        width: auto;
+        align-self: stretch;
+        display: flex;
+        align-items: stretch;
+        justify-content: stretch;
+        box-sizing: border-box;
+        margin: 0.85rem;
+        padding: 0;
         background: var(--ingame-bg, #050505) center / cover no-repeat;
+        border: 32px solid transparent;
+        border-image-source: url("assets/images/ui/ingame_frame.png");
+        border-image-slice: 40;
+        border-image-width: 32px;
+        border-image-repeat: stretch;
+        image-rendering: pixelated;
       }
       .trial-shell {
         flex: 1;
@@ -276,7 +299,7 @@
         border-image-width: 10px;
         border-image-repeat: stretch;
         background-color: var(--panel-soft);
-        background-clip: padding-box;
+        background-clip: border-box;
         padding: 0.35rem 0.5rem;
         min-height: 3rem;
         flex: 0 0 auto;
@@ -302,9 +325,14 @@
         line-height: 1.35;
       }
       .action-btn.selected {
-        outline: none;
-        background-color: rgba(255,255,255,0.12);
-        filter: drop-shadow(0 0 2px rgba(255,255,255,0.85));
+        outline: 2px solid #ffffff;
+        outline-offset: -2px;
+        background-color: rgba(255, 255, 255, 0.2);
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+        color: #ffffff;
+      }
+      .action-btn.selected .sub {
+        color: rgba(242, 242, 242, 0.82);
       }
       .event-row, .record-row {
         padding: 0.55rem 0.65rem;
@@ -1039,15 +1067,14 @@
     </section>
 
     <section id="screen-ingame" class="screen" aria-label="재판">
+      <div class="ingame-backdrop">
       <div class="trial-shell">
         <aside class="col right-stack" aria-label="ACTION">
           <div class="panel panel-court-name" aria-label="염라의 법정">
             <div class="panel-body hud" id="courtMeta">염라의 법정</div>
           </div>
 
-          <div class="panel" style="min-height:6rem" aria-label="빈 레이아웃">
-            <div class="panel-title">EMPTY</div>
-          </div>
+          <div class="panel panel-action-spacer" style="min-height:6rem" aria-hidden="true"></div>
 
           <button type="button" class="action-btn" id="eventsBtn">
             <img class="action-icon" src="assets/images/ui/icon_events.png" alt="" aria-hidden="true">
@@ -1176,6 +1203,7 @@
             </div>
           </div>
         </aside>
+      </div>
       </div>
     </section>
 
@@ -1644,12 +1672,21 @@
             : "삶의 책임을 단죄하고 지옥으로 보냅니다.";
         }
 
+        function isActionSelected(id, index) {
+          if (ui.focusArea === "actions" && ui.actionIndex === index) return true;
+          if (id === "events" && ui.emptyMode === "events") return true;
+          if (id === "interrogate" && ui.emptyMode === "interrogate") return true;
+          if (id === "verdict" && ui.emptyMode === "verdict") return true;
+          if (id === "menu" && ui.emptyMode === "menu") return true;
+          return false;
+        }
+
         function renderEvents() {
           const s = Game.state;
           const ev = selectedEvent();
           const btn = document.getElementById("eventsBtn");
           const sub = document.getElementById("eventsSub");
-          btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 0);
+          btn.classList.toggle("selected", isActionSelected("events", 0));
           sub.textContent = "망자의 생애 기록을 열람합니다.";
         }
 
@@ -1668,7 +1705,7 @@
             const btn = document.createElement("button");
             btn.type = "button";
             btn.disabled = !!a.disabled;
-            btn.className = "action-btn" + (ui.focusArea === "actions" && ui.actionIndex === i ? " selected" : "");
+            btn.className = "action-btn" + (isActionSelected(a.id, i) ? " selected" : "");
             btn.innerHTML =
               '<img class="action-icon" src="' + escapeHtml(a.icon) + '" alt="" aria-hidden="true">' +
               '<span class="action-copy">' + escapeHtml(a.label) +
@@ -2028,26 +2065,10 @@
         }
 
         function renderInterrogate() {
-          const ev = Game.getSelectedEvent();
           const btn = document.getElementById("interrogateBtn");
           const sub = document.getElementById("interrogateSub");
           btn.disabled = false;
-          if (!ev) {
-            btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
-            sub.textContent = "심문할 사건을 선택합니다";
-            return;
-          }
-          if (!ev.contextRead) {
-            btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
-            sub.textContent = "심문할 사건을 선택합니다";
-            return;
-          }
-          if (!ev.intentRead) {
-            btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
-            sub.textContent = "심문할 사건을 선택합니다";
-            return;
-          }
-          btn.classList.toggle("selected", ui.focusArea === "actions" && ui.actionIndex === 1);
+          btn.classList.toggle("selected", isActionSelected("interrogate", 1));
           sub.textContent = "심문할 사건을 선택합니다";
         }
 
