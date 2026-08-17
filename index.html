@@ -64,6 +64,16 @@
         gap: 0.75rem;
       }
       .panel-body { padding: 0.75rem; }
+      /* 프레임 안쪽 검정 면을 팔각 채움 이미지로 대체 */
+      .panel-court-name {
+        background-color: transparent;
+        background-image: url("assets/images/ui/panel_fill.png");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100% 100%;
+        background-origin: border-box;
+        background-clip: border-box;
+      }
       /* 좌측 ACTION 상단: 제목/본문 분리 없이 법정명 한 줄 */
       .panel-court-name {
         border: 14px solid transparent;
@@ -71,8 +81,6 @@
         border-image-slice: 24;
         border-image-width: 14px;
         border-image-repeat: stretch;
-        background-color: #000;
-        background-clip: border-box;
         image-rendering: pixelated;
       }
       .panel-court-name .panel-body {
@@ -91,12 +99,11 @@
       /* 중앙 상단: 재판 중 대상명 */
       .panel-trial-subject {
         border: 12px solid transparent;
-        border-image-source: url("assets/images/ui/trial_subject_frame.png");
-        border-image-slice: 24;
+        border-image-source: url("assets/images/ui/trial_subject_frame_fill.png");
+        border-image-slice: 24 fill;
         border-image-width: 12px;
         border-image-repeat: stretch;
-        background-color: #000;
-        background-clip: border-box;
+        background: transparent;
         image-rendering: pixelated;
       }
       .panel-trial-subject .panel-body {
@@ -106,12 +113,11 @@
       /* 법정시간: 팔각 패널 프레임을 9-slice로 감쌈 */
       .panel-court-time {
         border: 12px solid transparent;
-        border-image-source: url("assets/images/ui/court_info_frame.png");
-        border-image-slice: 16;
+        border-image-source: url("assets/images/ui/court_time_frame.png");
+        border-image-slice: 12 fill;
         border-image-width: 12px;
         border-image-repeat: stretch;
-        background-color: #000;
-        background-clip: border-box;
+        background: transparent;
         image-rendering: pixelated;
       }
       .panel-court-time .panel-title {
@@ -299,8 +305,7 @@
         border-image-slice: 16;
         border-image-width: 12px;
         border-image-repeat: stretch;
-        background-color: #000;
-        background-clip: border-box;
+        background: transparent;
         padding: 0.4rem;
         image-rendering: pixelated;
       }
@@ -315,12 +320,12 @@
         align-items: center;
         gap: 0.55rem;
         border: 10px solid transparent;
-        border-image-source: url("assets/images/ui/btn_frame.png");
-        border-image-slice: 10;
+        position: relative;
+        border-image-source: url("assets/images/ui/btn_frame_fill.png");
+        border-image-slice: 10 fill;
         border-image-width: 10px;
         border-image-repeat: stretch;
-        background-color: var(--panel-soft);
-        background-clip: border-box;
+        background: transparent;
         padding: 0.35rem 0.5rem;
         min-height: 3rem;
         flex: 0 0 auto;
@@ -346,11 +351,17 @@
         line-height: 1.35;
       }
       .action-btn.selected {
-        outline: 2px solid #ffffff;
-        outline-offset: -2px;
-        background-color: rgba(255, 255, 255, 0.2);
+        outline: none;
         filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
         color: #ffffff;
+      }
+      /* 프레임 채움이 배경 위에 그려지므로 강조는 오버레이로 얹는다 */
+      .action-btn.selected::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.18);
+        pointer-events: none;
       }
       .action-btn.selected .sub {
         color: rgba(242, 242, 242, 0.82);
@@ -538,6 +549,7 @@
         image-rendering: pixelated;
         display: flex;
         flex-direction: column;
+        justify-content: center;
       }
       .record-panel-overlay-title {
         flex: 0 0 auto;
@@ -809,21 +821,20 @@
         border-image-slice: 16;
         border-image-width: 12px;
         border-image-repeat: stretch;
-        background-color: #000;
-        background-clip: padding-box;
+        background: transparent;
         padding: 0.35rem;
         image-rendering: pixelated;
       }
       .court-info-btn {
+        position: relative;
         width: 100%;
-        min-height: 2.6rem;
+        min-height: 3rem;
         border: 10px solid transparent;
-        border-image-source: url("assets/images/ui/btn_frame.png");
-        border-image-slice: 10;
+        border-image-source: url("assets/images/ui/btn_frame_fill.png");
+        border-image-slice: 10 fill;
         border-image-width: 10px;
         border-image-repeat: stretch;
-        background-color: var(--panel-soft);
-        background-clip: padding-box;
+        background: transparent;
         color: var(--text);
         padding: 0.35rem 0.55rem;
         display: flex;
@@ -857,8 +868,16 @@
       }
       .court-info-btn.selected {
         outline: none;
-        background-color: rgba(255,255,255,0.12);
-        filter: drop-shadow(0 0 2px rgba(255,255,255,0.85));
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+        color: #ffffff;
+      }
+      /* ::after는 화살표라 강조 오버레이는 ::before로 얹는다 */
+      .court-info-btn.selected::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.18);
+        pointer-events: none;
       }
       .court-info-drawer {
         position: absolute;
@@ -922,6 +941,7 @@
         display: flex;
         justify-content: space-between;
         gap: 1rem;
+        margin-top: auto;
         color: var(--muted);
         font-size: 0.78rem;
         line-height: 1.35;
@@ -1116,6 +1136,10 @@
 
             <div class="action-list" id="actionList"></div>
           </div>
+          <div class="hint">
+            <span>↑↓ 메뉴 · Enter 선택 · Tab/클릭 영역</span>
+            <span>1 사건 · Space 심문 · V 판결</span>
+          </div>
           <div class="panel panel-court-time">
             <div class="panel-title">
               <span class="panel-title-label">
@@ -1129,10 +1153,6 @@
                 <div class="seg-track" id="timeSegs"></div>
               </div>
             </div>
-          </div>
-          <div class="hint">
-            <span>↑↓ 메뉴 · Enter 선택 · Tab/클릭 영역</span>
-            <span>1 사건 · Space 심문 · V 판결</span>
           </div>
         </aside>
 
@@ -2003,6 +2023,10 @@
           ui.emptyMode = "events";
           setRecordOverlayActive(false);
           syncEventFromRecordPage(recordPages()[0]);
+          renderEvents();
+          renderActions();
+          renderInterrogate();
+          renderActionPanel();
           renderEmpty();
           renderRecord();
         }
