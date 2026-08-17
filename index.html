@@ -435,9 +435,24 @@
         display: flex;
         flex-direction: column;
       }
-      .record-box {
+      .record-shell {
+        position: relative;
         align-self: stretch;
         flex: 0 0 50%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .record-panel-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding-top: 1.9rem;
+      }
+      .record-box {
+        align-self: stretch;
+        flex: 1 1 auto;
         height: auto;
         min-height: 0;
         border: 8px solid transparent;
@@ -452,6 +467,25 @@
       .record-box > .record-page,
       .record-box > .record-page-info {
         background: transparent;
+      }
+      .record-box > #emptyPage.record-page {
+        flex: 1 1 auto;
+        min-height: 4rem;
+      }
+      /* 노트 스프링: record-shell 상단에 절반 걸침 */
+      .record-spring {
+        position: absolute;
+        z-index: 2;
+        left: 0.75rem;
+        right: 0.75rem;
+        top: -0.42rem;
+        height: 3.8rem;
+        background-image: url("assets/images/ui/notes_spring.png");
+        background-repeat: repeat-x;
+        background-position: top center;
+        background-size: auto 100%;
+        image-rendering: pixelated;
+        pointer-events: none;
       }
       .record-box > .panel-title {
         border: 8px solid transparent;
@@ -890,13 +924,18 @@
         <aside class="col" aria-label="RIGHT SIDE">
           <section class="panel" id="emptyBox" style="flex:1;min-height:0" aria-label="심문 선택">
             <div class="panel-title" id="emptyTitle">EMPTY</div>
-            <div class="record-page" id="emptyPage"></div>
           </section>
-          <section class="panel record-box" id="recordBox" aria-label="NOTES">
-            <div class="panel-title">NOTES</div>
-            <div class="record-page" id="recordPage"></div>
-            <div class="record-page-info" id="recordPageInfo">PAGE 0/0</div>
-          </section>
+          <div class="record-shell">
+            <div class="record-spring" aria-hidden="true"></div>
+            <div class="record-panel-wrap">
+              <section class="panel record-box" id="recordBox" aria-label="NOTES">
+                <div class="record-page" id="emptyPage"></div>
+                <div class="panel-title">NOTES</div>
+                <div class="record-page" id="recordPage"></div>
+                <div class="record-page-info" id="recordPageInfo">PAGE 0/0</div>
+              </section>
+            </div>
+          </div>
         </aside>
       </div>
     </section>
