@@ -31,12 +31,12 @@
     labels: {
       courtName: "염라의 법정",
       courtTime: "법정시간",
-      contextAction: "추가 사실 CONTEXT 조사",
+      contextAction: "추가 사실 조사",
       intentAction: "감정과 의도 확인",
       heaven: "천국",
       hell: "지옥",
       timeExpired: "남은 법정시간이 부족합니다.",
-      needContextFirst: "먼저 CONTEXT를 조사해야 합니다.",
+      needContextFirst: "먼저 추가 사실을 조사해야 합니다.",
       dayEnded: "하루가 지나 법정시간과 금일 공판이 갱신되었습니다.",
     },
   };
