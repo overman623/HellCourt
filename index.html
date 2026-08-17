@@ -447,7 +447,68 @@
         display: flex;
         flex-direction: column;
       }
+      .record-panel-frame {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .record-panel-overlay {
+        position: absolute;
+        top: 1.9rem;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        border: 8px solid transparent;
+        border-image-source: url("assets/images/ui/record_underlay.png");
+        border-image-slice: 8 fill;
+        border-image-width: 8px;
+        border-image-repeat: stretch;
+        background: transparent;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+      .record-panel-overlay[hidden] {
+        display: none;
+      }
+      .record-panel-overlay-border {
+        flex: 1 1 auto;
+        align-self: stretch;
+        min-height: 0;
+        margin: 0.45rem;
+        box-sizing: border-box;
+        border: 12px solid transparent;
+        border-image-source: url("assets/images/ui/panel_frame.png");
+        border-image-slice: 16 fill;
+        border-image-width: 12px;
+        border-image-repeat: stretch;
+        image-rendering: pixelated;
+        display: flex;
+        flex-direction: column;
+      }
+      .record-panel-overlay-title {
+        flex: 0 0 auto;
+        align-self: stretch;
+        margin: 0;
+        padding: 0.45rem 0.75rem;
+        border: 8px solid transparent;
+        border-image-source: url("assets/images/ui/record_frame.png");
+        border-image-slice: 8 fill;
+        border-image-width: 8px;
+        border-image-repeat: stretch;
+        color: #232323;
+        font-size: 1.15rem;
+        letter-spacing: 0.08em;
+        text-align: center;
+        image-rendering: pixelated;
+      }
       .record-panel-wrap {
+        position: relative;
+        z-index: 1;
         flex: 1 1 auto;
         min-height: 0;
         display: flex;
@@ -481,6 +542,23 @@
       #emptyBox {
         display: flex;
         flex-direction: column;
+        min-height: 0;
+        border-color: #ffffff;
+      }
+      #emptyBox.is-inactive {
+        visibility: hidden;
+        pointer-events: none;
+      }
+      #emptyTitle[hidden] {
+        display: none;
+      }
+      #emptyBox.is-events-only {
+        justify-content: center;
+      }
+      #emptyBox.is-events-only .empty-mode-art {
+        height: auto;
+        max-height: none;
+        flex: 1 1 auto;
         min-height: 0;
       }
       #emptyBox > #emptyPage.record-page {
@@ -549,7 +627,7 @@
       /* 노트 스프링: record-shell 상단에 절반 걸침 */
       .record-spring {
         position: absolute;
-        z-index: 2;
+        z-index: 3;
         left: 0.75rem;
         right: 0.75rem;
         top: -0.42rem;
@@ -1052,36 +1130,49 @@
         <aside class="col" aria-label="RIGHT SIDE">
           <section class="panel" id="emptyBox" style="flex:1;min-height:0" aria-label="심문 선택">
             <div class="panel-title" id="emptyTitle">EMPTY</div>
+            <div class="empty-mode-art" id="emptyEventsArt" hidden>
+              <img src="assets/images/ui/events_notes.png" alt="" aria-hidden="true">
+            </div>
             <div class="empty-mode-art" id="emptyInterrogateArt" hidden>
               <img src="assets/images/ui/interrogate_mic.png" alt="" aria-hidden="true">
             </div>
             <div class="empty-mode-art" id="emptyVerdictArt" hidden>
               <img src="assets/images/ui/verdict_gavel.png" alt="" aria-hidden="true">
             </div>
+            <div class="empty-mode-art" id="emptyMenuArt" hidden>
+              <img src="assets/images/ui/menu_door.png" alt="" aria-hidden="true">
+            </div>
             <div class="record-page" id="emptyPage"></div>
           </section>
           <div class="record-shell">
             <div class="record-spring" aria-hidden="true"></div>
-            <div class="record-panel-wrap">
-              <section class="panel record-box" id="recordBox" aria-label="NOTES">
-                <div class="record-page record-page-top" id="recordTopPage" aria-hidden="true"></div>
-                <div class="panel-title panel-title-row">
-                  <span>NOTES</span>
-                  <span class="record-page-count" id="recordPageCount">0/0</span>
+            <div class="record-panel-frame">
+              <div class="record-panel-overlay" aria-hidden="true">
+                <div class="record-panel-overlay-border">
+                  <div class="record-panel-overlay-title">인생사건메모</div>
                 </div>
-                <div class="record-page" id="recordPage"></div>
-                <div class="record-page-control">
-                  <div class="record-page-side is-left" aria-hidden="true">
-                    <img class="record-page-decoration" src="assets/images/ui/page_left.png" alt="">
-                    <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
+              </div>
+              <div class="record-panel-wrap">
+                <section class="panel record-box" id="recordBox" aria-label="NOTES">
+                  <div class="record-page record-page-top" id="recordTopPage" aria-hidden="true"></div>
+                  <div class="panel-title panel-title-row">
+                    <span>NOTES</span>
+                    <span class="record-page-count" id="recordPageCount">0/0</span>
                   </div>
-                  <div class="record-page-info" id="recordPageInfo">PAGE 0</div>
-                  <div class="record-page-side is-right" aria-hidden="true">
-                    <img class="record-page-decoration" src="assets/images/ui/page_right.png" alt="">
-                    <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
+                  <div class="record-page" id="recordPage"></div>
+                  <div class="record-page-control">
+                    <div class="record-page-side is-left" aria-hidden="true">
+                      <img class="record-page-decoration" src="assets/images/ui/page_left.png" alt="">
+                      <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
+                    </div>
+                    <div class="record-page-info" id="recordPageInfo">PAGE 0</div>
+                    <div class="record-page-side is-right" aria-hidden="true">
+                      <img class="record-page-decoration" src="assets/images/ui/page_right.png" alt="">
+                      <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
+                    </div>
                   </div>
-                </div>
-              </section>
+                </section>
+              </div>
             </div>
           </div>
         </aside>
@@ -1122,13 +1213,6 @@
       </div>
     </section>
 
-    <div class="modal-layer" id="menuModal" aria-label="메뉴 팝업">
-      <div class="menu-popup">
-        <div class="menu-popup-title">메뉴</div>
-        <nav class="popup-menu" id="popupMenu"></nav>
-      </div>
-    </div>
-
     <div class="modal-layer" id="verdictConfirmModal" aria-label="판결 확인 팝업">
       <div class="menu-popup">
         <div class="menu-popup-title">판결 확인</div>
@@ -1167,7 +1251,6 @@
           expediteChoice: "heaven",
           endIndex: 0,
           popupIndex: 0,
-          menuOpen: false,
           settingsReturn: "title",
           unlockTimers: [],
         };
@@ -1468,6 +1551,9 @@
         const COURT_INFO_VIEWS = ["today", "profile"];
 
         function trialFocusAreas() {
+          if (ui.emptyMode === "blank" || ui.emptyMode === "events") {
+            return ["actions", "courtInfo", "record"];
+          }
           return ["actions", "courtInfo", "record", "empty"];
         }
 
@@ -1665,12 +1751,27 @@
           const page = document.getElementById("emptyPage");
           const interrogateArt = document.getElementById("emptyInterrogateArt");
           const verdictArt = document.getElementById("emptyVerdictArt");
+          const menuArt = document.getElementById("emptyMenuArt");
+          const eventsArt = document.getElementById("emptyEventsArt");
           box.classList.toggle("selected", ui.focusArea === "empty");
           const s = Game.state;
           const showInterrogateArt = ui.emptyMode === "interrogate" && s && s.events && s.events.length;
           const showVerdictArt = ui.emptyMode === "verdict";
+          const showMenuArt = ui.emptyMode === "menu";
+          const showEventsArt = ui.emptyMode === "events";
           if (interrogateArt) interrogateArt.hidden = !showInterrogateArt;
           if (verdictArt) verdictArt.hidden = !showVerdictArt;
+          if (menuArt) menuArt.hidden = !showMenuArt;
+          if (eventsArt) eventsArt.hidden = !showEventsArt;
+          const isBlank = ui.emptyMode === "blank";
+          box.classList.toggle("is-inactive", isBlank);
+          box.classList.toggle("is-events-only", showEventsArt);
+          box.hidden = false;
+          title.hidden = showEventsArt;
+          if (isBlank && ui.focusArea === "empty") {
+            ui.focusArea = "actions";
+            box.classList.remove("selected");
+          }
           if (ui.emptyMode !== "interrogate" || !s || !s.events || !s.events.length) {
             if (ui.emptyMode === "verdict") {
               title.textContent = "판결 선택";
@@ -1679,6 +1780,14 @@
                 "   " + verdictDescription("heaven") + "\n\n" +
                 (ui.verdictIndex === 1 ? "▶ " : "  ") + "유죄\n" +
                 "   " + verdictDescription("hell");
+            } else if (ui.emptyMode === "menu") {
+              title.textContent = "메뉴";
+              page.textContent = popupItems.map(function (item, i) {
+                return (i === ui.popupIndex ? "▶ " : "  ") + item.label;
+              }).join("\n\n");
+            } else if (ui.emptyMode === "events") {
+              title.textContent = "";
+              page.textContent = "";
             } else {
               title.textContent = "EMPTY";
               page.textContent = "";
@@ -1707,6 +1816,7 @@
           ui.emptyMode = "interrogate";
           ui.emptyIndex = ui.eventIndex;
           ui.focusArea = "empty";
+          setRecordOverlayActive(true);
           setCourtText("심문할 사건 선택", "우측 상단 목록에서 인생사건을 고르십시오.");
           refreshTrial();
         }
@@ -1714,6 +1824,11 @@
         function moveEmptySelection(dir) {
           if (ui.emptyMode === "verdict") {
             ui.verdictIndex = (ui.verdictIndex + dir + 2) % 2;
+            renderEmpty();
+            return;
+          }
+          if (ui.emptyMode === "menu") {
+            ui.popupIndex = (ui.popupIndex + dir + popupItems.length) % popupItems.length;
             renderEmpty();
             return;
           }
@@ -1728,6 +1843,10 @@
           if (ui.emptyMode === "verdict") {
             ui.verdictChoice = ui.verdictIndex === 0 ? "heaven" : "hell";
             openVerdictConfirmPopup();
+            return;
+          }
+          if (ui.emptyMode === "menu") {
+            confirmMenuSelection();
             return;
           }
           if (ui.emptyMode !== "interrogate" || !s || !s.events || !s.events.length) return;
@@ -1808,10 +1927,18 @@
           renderRecord();
         }
 
+        function setRecordOverlayActive(active) {
+          const overlay = document.querySelector(".record-panel-overlay");
+          if (overlay) overlay.hidden = !active;
+        }
+
         function openEventRecord() {
           ui.recordPage = 0;
           ui.focusArea = "record";
+          ui.emptyMode = "events";
+          setRecordOverlayActive(false);
           syncEventFromRecordPage(recordPages()[0]);
+          renderEmpty();
           renderRecord();
         }
 
@@ -1970,7 +2097,7 @@
         function confirmAction(id) {
           if (id === "events") openEventRecord();
           else if (id === "verdict") openVerdictPicker();
-          else if (id === "menu") openMenuPopup();
+          else if (id === "menu") openMenuPicker();
         }
 
         function openVerdictPicker() {
@@ -1978,6 +2105,7 @@
           ui.emptyMode = "verdict";
           ui.verdictIndex = 0;
           ui.focusArea = "empty";
+          setRecordOverlayActive(true);
           setCourtText("판결 선택", "우측 상단에서 무죄 또는 유죄를 선택하십시오.");
           refreshTrial();
         }
@@ -1987,33 +2115,13 @@
           { id: "back", label: "뒤로가기" },
         ];
 
-        function renderMenuPopup() {
-          const menu = document.getElementById("popupMenu");
-          menu.innerHTML = "";
-          popupItems.forEach(function (item, i) {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "popup-item" + (i === ui.popupIndex ? " selected" : "");
-            btn.textContent = item.label;
-            btn.addEventListener("click", function () {
-              ui.popupIndex = i;
-              playSfx("select");
-              confirmMenuPopup();
-            });
-            menu.appendChild(btn);
-          });
-        }
-
-        function openMenuPopup() {
-          ui.menuOpen = true;
+        function openMenuPicker() {
+          ui.emptyMode = "menu";
           ui.popupIndex = 0;
-          renderMenuPopup();
-          document.getElementById("menuModal").classList.add("active");
-        }
-
-        function closeMenuPopup() {
-          ui.menuOpen = false;
-          document.getElementById("menuModal").classList.remove("active");
+          ui.focusArea = "empty";
+          setRecordOverlayActive(true);
+          setCourtText("메뉴", "우측 상단에서 항목을 선택하십시오.");
+          refreshTrial();
         }
 
         const verdictConfirmItems = [
@@ -2065,16 +2173,18 @@
           submitVerdictFromEmpty();
         }
 
-        function confirmMenuPopup() {
+        function confirmMenuSelection() {
           const item = popupItems[ui.popupIndex];
           if (!item) return;
           playSfx("confirm");
           if (item.id === "back") {
-            closeMenuPopup();
+            ui.emptyMode = "blank";
+            ui.focusArea = "actions";
+            refreshTrial();
             return;
           }
           if (item.id === "settings") {
-            closeMenuPopup();
+            ui.emptyMode = "blank";
             ui.settingsIndex = 0;
             ui.settingsReturn = "ingame";
             showScreen("settings");
@@ -2317,9 +2427,6 @@
           playSfx("select");
           toggleCourtInfo("profile");
         });
-        document.getElementById("menuModal").addEventListener("click", function (e) {
-          if (e.target.id === "menuModal") closeMenuPopup();
-        });
         document.getElementById("verdictConfirmModal").addEventListener("click", function (e) {
           if (e.target.id === "verdictConfirmModal") closeVerdictConfirmPopup();
         });
@@ -2380,21 +2487,6 @@
             } else if (e.key === "Escape") {
               e.preventDefault();
               closeVerdictConfirmPopup();
-            }
-            return;
-          }
-          if (ui.menuOpen) {
-            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-              e.preventDefault();
-              ui.popupIndex = (ui.popupIndex + (e.key === "ArrowDown" ? 1 : -1) + popupItems.length) % popupItems.length;
-              playSfx("select");
-              renderMenuPopup();
-            } else if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              confirmMenuPopup();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              closeMenuPopup();
             }
             return;
           }
