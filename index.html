@@ -230,6 +230,10 @@
         flex-direction: column;
         gap: 0.65rem;
       }
+      /* 우측 EMPTY를 중앙 '재판 중' 패널 아래로 맞춤 */
+      .col[aria-label="RIGHT SIDE"] {
+        padding-top: calc(24px + 1.1rem + 1.25em + 0.65rem);
+      }
       .hud {
         display: grid;
         gap: 0.5rem;
@@ -482,6 +486,65 @@
       #emptyBox > #emptyPage.record-page {
         flex: 1 1 auto;
         min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(226, 226, 226, 0.78) #0a0a0a;
+      }
+      #emptyPage::-webkit-scrollbar {
+        width: 10px;
+      }
+      #emptyPage::-webkit-scrollbar-track {
+        background:
+          linear-gradient(to right, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1px, transparent 1px),
+          #0a0a0a;
+        border-left: 1px solid rgba(255,255,255,0.22);
+      }
+      #emptyPage::-webkit-scrollbar-thumb {
+        background: repeating-linear-gradient(
+          to bottom,
+          #cfcfcf 0,
+          #cfcfcf 3px,
+          #8f8f8f 3px,
+          #8f8f8f 6px
+        );
+        border: 1px solid #1a1a1a;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+      }
+      #emptyPage::-webkit-scrollbar-thumb:hover {
+        background: #f2f2f2;
+      }
+      #emptyPage::-webkit-scrollbar-corner {
+        background: #0a0a0a;
+      }
+      .empty-event {
+        white-space: pre-wrap;
+        line-height: 1.55;
+        padding-bottom: 0.9rem;
+      }
+      .empty-event:last-child {
+        padding-bottom: 0;
+      }
+      .empty-mode-art {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 50vh;
+        max-height: 50%;
+        padding: 0.35rem 0.35rem 0.15rem;
+        box-sizing: border-box;
+      }
+      .empty-mode-art[hidden] {
+        display: none;
+      }
+      .empty-mode-art img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+        image-rendering: pixelated;
+        pointer-events: none;
       }
       /* 노트 스프링: record-shell 상단에 절반 걸침 */
       .record-spring {
@@ -989,6 +1052,12 @@
         <aside class="col" aria-label="RIGHT SIDE">
           <section class="panel" id="emptyBox" style="flex:1;min-height:0" aria-label="심문 선택">
             <div class="panel-title" id="emptyTitle">EMPTY</div>
+            <div class="empty-mode-art" id="emptyInterrogateArt" hidden>
+              <img src="assets/images/ui/interrogate_mic.png" alt="" aria-hidden="true">
+            </div>
+            <div class="empty-mode-art" id="emptyVerdictArt" hidden>
+              <img src="assets/images/ui/verdict_gavel.png" alt="" aria-hidden="true">
+            </div>
             <div class="record-page" id="emptyPage"></div>
           </section>
           <div class="record-shell">
@@ -1594,8 +1663,14 @@
           const box = document.getElementById("emptyBox");
           const title = document.getElementById("emptyTitle");
           const page = document.getElementById("emptyPage");
+          const interrogateArt = document.getElementById("emptyInterrogateArt");
+          const verdictArt = document.getElementById("emptyVerdictArt");
           box.classList.toggle("selected", ui.focusArea === "empty");
           const s = Game.state;
+          const showInterrogateArt = ui.emptyMode === "interrogate" && s && s.events && s.events.length;
+          const showVerdictArt = ui.emptyMode === "verdict";
+          if (interrogateArt) interrogateArt.hidden = !showInterrogateArt;
+          if (verdictArt) verdictArt.hidden = !showVerdictArt;
           if (ui.emptyMode !== "interrogate" || !s || !s.events || !s.events.length) {
             if (ui.emptyMode === "verdict") {
               title.textContent = "판결 선택";
@@ -1611,11 +1686,19 @@
             return;
           }
           title.textContent = "심문할 인생사건 선택";
-          page.textContent = s.events.map(function (ev, i) {
+          page.innerHTML = s.events.map(function (ev, i) {
             const mark = i === ui.emptyIndex ? "▶ " : "  ";
             const current = i === ui.eventIndex ? " · 현재 선택" : "";
-            return mark + (i + 1) + ". " + (ev.year || "????") + " · " + ev.title + current + "\n   " + readLabel(ev) + "\n   " + interrogationCostLabel(ev);
-          }).join("\n\n");
+            return (
+              '<div class="empty-event' + (i === ui.emptyIndex ? " is-current" : "") + '">' +
+              escapeHtml(mark + (i + 1) + ". " + (ev.year || "????") + " · " + ev.title + current) +
+              "\n   " + escapeHtml(readLabel(ev)) +
+              "\n   " + escapeHtml(interrogationCostLabel(ev)) +
+              "</div>"
+            );
+          }).join("");
+          const selected = page.querySelector(".empty-event.is-current");
+          if (selected) selected.scrollIntoView({ block: "nearest" });
         }
 
         function openInterrogatePicker() {
