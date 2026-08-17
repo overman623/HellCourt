@@ -190,6 +190,9 @@
       .action-list { display: flex; flex-direction: column; gap: 0.45rem; }
       /* 모서리가 잘린 프레임 이미지를 9-slice로 늘려 버튼 테두리로 사용 */
       .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
         border: 10px solid transparent;
         border-image-source: url("assets/images/ui/btn_frame.png");
         border-image-slice: 10;
@@ -201,6 +204,18 @@
         min-height: 3rem;
         flex: 0 0 auto;
         image-rendering: pixelated;
+      }
+      .action-btn .action-icon {
+        width: 1.55rem;
+        height: 1.55rem;
+        flex: 0 0 auto;
+        object-fit: contain;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+      .action-btn .action-copy {
+        min-width: 0;
+        flex: 1 1 auto;
       }
       .action-btn .sub {
         display: block;
@@ -585,13 +600,19 @@
           </div>
 
           <button type="button" class="action-btn" id="eventsBtn">
-            인생사건
-            <span class="sub" id="eventsSub">망자의 생애 기록을 열람합니다.</span>
+            <img class="action-icon" src="assets/images/ui/icon_events.png" alt="" aria-hidden="true">
+            <span class="action-copy">
+              인생사건
+              <span class="sub" id="eventsSub">망자의 생애 기록을 열람합니다.</span>
+            </span>
           </button>
 
           <button type="button" class="action-btn" id="interrogateBtn">
-            심문하기
-            <span class="sub" id="interrogateSub">심문할 사건을 선택합니다</span>
+            <img class="action-icon" src="assets/images/ui/icon_interrogate.png" alt="" aria-hidden="true">
+            <span class="action-copy">
+              심문하기
+              <span class="sub" id="interrogateSub">심문할 사건을 선택합니다</span>
+            </span>
           </button>
 
           <div class="action-list" id="actionList"></div>
@@ -1113,10 +1134,10 @@
 
         function renderActions() {
           const actions = [
-            { id: "events", label: "인생사건", sub: "망자의 생애 기록을 열람합니다.", external: true },
-            { id: "interrogate", label: "심문하기", sub: "심문할 사건을 선택합니다", external: true },
-            { id: "verdict", label: "판결하기", sub: "무죄 / 유죄 선택" },
-            { id: "menu", label: "메뉴", sub: "설정 / 뒤로가기" },
+            { id: "events", label: "인생사건", sub: "망자의 생애 기록을 열람합니다.", icon: "assets/images/ui/icon_events.png", external: true },
+            { id: "interrogate", label: "심문하기", sub: "심문할 사건을 선택합니다", icon: "assets/images/ui/icon_interrogate.png", external: true },
+            { id: "verdict", label: "판결하기", sub: "무죄 / 유죄 선택", icon: "assets/images/ui/icon_verdict.png" },
+            { id: "menu", label: "메뉴", sub: "설정 / 뒤로가기", icon: "assets/images/ui/icon_menu.png" },
           ];
           ui._trialActions = actions;
           const list = document.getElementById("actionList");
@@ -1127,7 +1148,10 @@
             btn.type = "button";
             btn.disabled = !!a.disabled;
             btn.className = "action-btn" + (ui.focusArea === "actions" && ui.actionIndex === i ? " selected" : "");
-            btn.innerHTML = escapeHtml(a.label) + '<span class="sub">' + escapeHtml(a.sub || "") + "</span>";
+            btn.innerHTML =
+              '<img class="action-icon" src="' + escapeHtml(a.icon) + '" alt="" aria-hidden="true">' +
+              '<span class="action-copy">' + escapeHtml(a.label) +
+              '<span class="sub">' + escapeHtml(a.sub || "") + "</span></span>";
             btn.addEventListener("click", function () {
               if (a.disabled) return;
               ui.focusArea = "actions";
