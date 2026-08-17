@@ -430,15 +430,79 @@
         animation: recordUpdated 0.9s ease both;
       }
       .record-empty { color: var(--muted); padding: 0.75rem; }
+      .court-column {
+        position: relative;
+        overflow: hidden;
+      }
       .court-bottom {
+        flex: 0 0 auto;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.65rem;
       }
-      .court-bottom .panel {
-        min-height: 9rem;
-        max-height: 13rem;
+      .court-info-btn {
+        width: 100%;
+        min-height: 3rem;
+        border: 10px solid transparent;
+        border-image-source: url("assets/images/ui/btn_frame.png");
+        border-image-slice: 10;
+        border-image-width: 10px;
+        border-image-repeat: stretch;
+        background-color: var(--panel-soft);
+        background-clip: padding-box;
+        color: var(--text);
+        padding: 0.35rem 0.65rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        text-align: left;
+        image-rendering: pixelated;
+      }
+      .court-info-btn::after {
+        content: "▲";
+        color: var(--muted);
+        transition: transform 180ms ease;
+      }
+      .court-info-btn[aria-expanded="true"]::after {
+        transform: rotate(180deg);
+      }
+      .court-info-btn.selected {
+        outline: none;
+        background-color: rgba(255,255,255,0.12);
+        filter: drop-shadow(0 0 2px rgba(255,255,255,0.85));
+      }
+      .court-info-drawer {
+        position: absolute;
+        z-index: 5;
+        left: 0;
+        right: 0;
+        bottom: 3.65rem;
+        max-height: min(58%, 28rem);
+        display: block;
+        padding: 0.65rem;
         overflow: auto;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.96);
+        box-shadow: 0 -0.7rem 1.5rem rgba(0, 0, 0, 0.75);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(calc(100% + 4.5rem));
+        transition: transform 220ms ease, opacity 180ms ease, visibility 220ms;
+      }
+      .court-info-drawer.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      .court-info-drawer .panel {
+        min-height: 9rem;
+        overflow: auto;
+      }
+      .court-info-drawer .panel[hidden] {
+        display: none;
       }
       .mini-list {
         white-space: pre-wrap;
@@ -606,6 +670,9 @@
           align-self: stretch;
         }
         .court-frame { min-height: 340px; }
+        .court-info-drawer {
+          max-height: 70%;
+        }
       }
     </style>
   </head>
@@ -680,7 +747,7 @@
           </div>
         </aside>
 
-        <main class="col" aria-label="COURT">
+        <main class="col court-column" aria-label="COURT">
           <div class="panel">
             <div class="panel-body" id="trialSubject">재판 중: -</div>
           </div>
@@ -692,18 +759,26 @@
               <div class="sub" id="courtSub"></div>
             </div>
           </div>
-          <div class="court-bottom">
-            <section class="panel">
+          <div class="court-info-drawer" id="courtInfoDrawer" aria-hidden="true">
+            <section class="panel" id="todayPanel" aria-label="금일 망자 상세정보" hidden>
               <div class="panel-title panel-title-row">
                 <span>금일 망자</span>
                 <span id="remainingValue">남은 망자 0명</span>
               </div>
               <div class="panel-body mini-list" id="todayList"></div>
             </section>
-            <section class="panel">
+            <section class="panel" id="profilePanel" aria-label="망자 프로필 상세정보" hidden>
               <div class="panel-title">망자 프로필</div>
               <div class="panel-body mini-list scroll-focus" id="profileBox"></div>
             </section>
+          </div>
+          <div class="court-bottom">
+            <button type="button" class="court-info-btn" id="todayInfoBtn" aria-controls="courtInfoDrawer" aria-expanded="false">
+              금일 망자
+            </button>
+            <button type="button" class="court-info-btn" id="profileInfoBtn" aria-controls="courtInfoDrawer" aria-expanded="false">
+              망자 프로필
+            </button>
           </div>
         </main>
 
@@ -788,6 +863,9 @@
           eventIndex: 0,
           focusArea: "actions",
           actionIndex: 0,
+          courtInfoOpen: false,
+          courtInfoView: null,
+          courtInfoIndex: 0,
           emptyMode: "blank",
           emptyIndex: 0,
           verdictIndex: 0,
@@ -1097,8 +1175,21 @@
           return (ui._trialActions || []).length || 4;
         }
 
+        const COURT_INFO_VIEWS = ["today", "profile"];
+
         function trialFocusAreas() {
-          return ["actions", "profile", "record", "empty"];
+          return ["actions", "courtInfo", "record", "empty"];
+        }
+
+        function courtInfoView() {
+          return COURT_INFO_VIEWS[ui.courtInfoIndex] || "today";
+        }
+
+        function moveCourtInfoSelection(dir) {
+          const n = COURT_INFO_VIEWS.length;
+          ui.courtInfoIndex = (ui.courtInfoIndex + dir + n) % n;
+          if (ui.courtInfoOpen) ui.courtInfoView = courtInfoView();
+          refreshTrial();
         }
 
         function moveFocusArea(dir) {
@@ -1122,8 +1213,8 @@
             confirmEmptySelection();
             return;
           }
-          if (ui.focusArea === "profile") {
-            document.getElementById("profileBox").scrollTop += 72;
+          if (ui.focusArea === "courtInfo") {
+            toggleCourtInfo(courtInfoView());
             return;
           }
           if (ui.focusArea === "record") {
@@ -1233,7 +1324,39 @@
             "가치관: " + vals + "\n" +
             "갈등 키워드: " + conflicts + "\n\n" +
             (s.summary || "프로필 요약이 없습니다.");
-          document.getElementById("profileBox").classList.toggle("selected", ui.focusArea === "profile");
+          const todayBtn = document.getElementById("todayInfoBtn");
+          const profileBtn = document.getElementById("profileInfoBtn");
+          const drawer = document.getElementById("courtInfoDrawer");
+          const todayPanel = document.getElementById("todayPanel");
+          const profilePanel = document.getElementById("profilePanel");
+          const grouped = ui.focusArea === "courtInfo";
+          const showToday = ui.courtInfoOpen && ui.courtInfoView === "today";
+          const showProfile = ui.courtInfoOpen && ui.courtInfoView === "profile";
+          document.getElementById("profileBox").classList.toggle("selected", showProfile);
+          todayBtn.classList.toggle("selected", grouped && ui.courtInfoIndex === 0);
+          profileBtn.classList.toggle("selected", grouped && ui.courtInfoIndex === 1);
+          todayBtn.setAttribute("aria-expanded", String(showToday));
+          profileBtn.setAttribute("aria-expanded", String(showProfile));
+          todayPanel.hidden = !showToday;
+          profilePanel.hidden = !showProfile;
+          drawer.classList.toggle("open", ui.courtInfoOpen);
+          drawer.setAttribute("aria-hidden", String(!ui.courtInfoOpen));
+        }
+
+        function toggleCourtInfo(view, forceOpen) {
+          const nextView = COURT_INFO_VIEWS.indexOf(view) >= 0 ? view : courtInfoView();
+          if (typeof forceOpen === "boolean") {
+            ui.courtInfoOpen = forceOpen;
+            if (forceOpen) ui.courtInfoView = nextView;
+          } else if (ui.courtInfoOpen && ui.courtInfoView === nextView) {
+            ui.courtInfoOpen = false;
+          } else {
+            ui.courtInfoOpen = true;
+            ui.courtInfoView = nextView;
+          }
+          ui.courtInfoIndex = Math.max(0, COURT_INFO_VIEWS.indexOf(nextView));
+          ui.focusArea = "courtInfo";
+          refreshTrial();
         }
 
         function renderEmpty() {
@@ -1871,14 +1994,22 @@
           playSfx("select");
           openInterrogatePicker();
         });
+        document.getElementById("todayInfoBtn").addEventListener("click", function () {
+          playSfx("select");
+          toggleCourtInfo("today");
+        });
+        document.getElementById("profileInfoBtn").addEventListener("click", function () {
+          playSfx("select");
+          toggleCourtInfo("profile");
+        });
         document.getElementById("menuModal").addEventListener("click", function (e) {
           if (e.target.id === "menuModal") closeMenuPopup();
         });
         document.getElementById("verdictConfirmModal").addEventListener("click", function (e) {
           if (e.target.id === "verdictConfirmModal") closeVerdictConfirmPopup();
         });
-        document.getElementById("profileBox").addEventListener("click", function () {
-          ui.focusArea = "profile";
+        document.getElementById("courtInfoDrawer").addEventListener("click", function () {
+          ui.focusArea = "courtInfo";
           playSfx("select");
           refreshTrial();
         });
@@ -2027,10 +2158,16 @@
             e.preventDefault();
             moveFocusArea(e.shiftKey ? -1 : 1);
             playSfx("select");
-          } else if (ui.focusArea === "profile" && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+          } else if (ui.focusArea === "courtInfo" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
             e.preventDefault();
-            const box = document.getElementById("profileBox");
-            box.scrollTop += e.key === "ArrowDown" ? 36 : -36;
+            moveCourtInfoSelection(e.key === "ArrowLeft" ? -1 : 1);
+            playSfx("select");
+          } else if (ui.focusArea === "courtInfo" && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            if (ui.courtInfoOpen) {
+              const drawer = document.getElementById("courtInfoDrawer");
+              drawer.scrollTop += e.key === "ArrowDown" ? 36 : -36;
+            }
           } else if (ui.focusArea === "empty" && (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown")) {
             e.preventDefault();
             moveEmptySelection(e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1);
@@ -2061,7 +2198,9 @@
             openVerdictPicker();
           } else if (e.key === "Escape") {
             e.preventDefault();
-            if (ui.emptyMode !== "blank") {
+            if (ui.courtInfoOpen) {
+              toggleCourtInfo(courtInfoView(), false);
+            } else if (ui.emptyMode !== "blank") {
               ui.emptyMode = "blank";
               ui.focusArea = "actions";
               refreshTrial();
