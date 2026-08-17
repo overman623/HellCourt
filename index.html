@@ -526,10 +526,63 @@
         background-clip: content-box;
         background-attachment: local;
       }
-      .record-page-info {
+      .record-page-control {
         flex: 0 0 auto;
-        padding: 0.35rem 0.75rem 0.55rem;
+        align-self: stretch;
+        display: flex;
+        align-items: stretch;
+        gap: 0.45rem;
+        margin: 0.35rem 0.55rem 0.5rem;
+      }
+      .record-page-side {
+        position: relative;
+        flex: 0 0 auto;
+        align-self: stretch;
+        width: auto;
+        aspect-ratio: 24 / 32;
+        display: grid;
+        place-items: center;
+      }
+      .record-page-decoration {
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+      .record-page-chevron {
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 45%;
+        height: 45%;
+        object-fit: contain;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+      .record-page-side.is-right .record-page-chevron {
+        transform: scaleX(-1);
+      }
+      .record-page-info {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+        padding: 0.15rem 0.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 8px solid transparent;
+        border-image-source: url("assets/images/ui/page_frame.png");
+        border-image-slice: 8 fill;
+        border-image-width: 8px;
+        border-image-repeat: stretch;
         text-align: center;
+        color: var(--muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        image-rendering: pixelated;
+      }
+      .record-page-count {
         color: var(--muted);
         font-size: 0.82rem;
         letter-spacing: 0.08em;
@@ -933,9 +986,22 @@
             <div class="record-panel-wrap">
               <section class="panel record-box" id="recordBox" aria-label="NOTES">
                 <div class="record-page" id="emptyPage"></div>
-                <div class="panel-title">NOTES</div>
+                <div class="panel-title panel-title-row">
+                  <span>NOTES</span>
+                  <span class="record-page-count" id="recordPageCount">0/0</span>
+                </div>
                 <div class="record-page" id="recordPage"></div>
-                <div class="record-page-info" id="recordPageInfo">PAGE 0/0</div>
+                <div class="record-page-control">
+                  <div class="record-page-side is-left" aria-hidden="true">
+                    <img class="record-page-decoration" src="assets/images/ui/page_left.png" alt="">
+                    <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
+                  </div>
+                  <div class="record-page-info" id="recordPageInfo">PAGE</div>
+                  <div class="record-page-side is-right" aria-hidden="true">
+                    <img class="record-page-decoration" src="assets/images/ui/page_right.png" alt="">
+                    <img class="record-page-chevron" src="assets/images/ui/page_chevron.png" alt="">
+                  </div>
+                </div>
               </section>
             </div>
           </div>
@@ -1626,7 +1692,7 @@
           ui.recordPage = Math.max(0, Math.min(ui.recordPage, pages.length - 1));
           const page = pages[ui.recordPage];
           document.getElementById("recordBox").classList.toggle("selected", ui.focusArea === "record");
-          document.getElementById("recordPageInfo").textContent = "PAGE " + (ui.recordPage + 1) + "/" + pages.length;
+          document.getElementById("recordPageCount").textContent = (ui.recordPage + 1) + "/" + pages.length;
           document.getElementById("recordPage").textContent = page.text;
         }
 
