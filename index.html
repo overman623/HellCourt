@@ -64,6 +64,53 @@
         gap: 0.75rem;
       }
       .panel-body { padding: 0.75rem; }
+      /* 좌측 ACTION 상단: 제목/본문 분리 없이 법정명 한 줄 */
+      .panel-court-name .panel-body {
+        padding: 0.7rem 0.85rem;
+      }
+      #courtMeta {
+        font-size: 1rem;
+        letter-spacing: 0.06em;
+        line-height: 1.35;
+      }
+      /* 법정시간: 팔각 패널 프레임을 9-slice로 감쌈 */
+      .panel-court-time {
+        border: 12px solid transparent;
+        border-image-source: url("assets/images/ui/panel_frame.png");
+        border-image-slice: 16;
+        border-image-width: 12px;
+        border-image-repeat: stretch;
+        background-color: #000;
+        background-clip: padding-box;
+        image-rendering: pixelated;
+      }
+      .panel-court-time .panel-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.45rem;
+        border-bottom-color: rgba(255, 255, 255, 0.22);
+      }
+      .panel-court-time .panel-title-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 0;
+      }
+      .panel-court-time .panel-title-icon {
+        width: 1.1rem;
+        height: 1.1rem;
+        flex: 0 0 auto;
+        object-fit: contain;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
+      .panel-court-time #timeValue {
+        min-width: 3.5rem;
+        text-align: right;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
 
       #screen-title {
         justify-content: flex-end;
@@ -578,7 +625,7 @@
 
     <section id="screen-lobby" class="screen" aria-label="로비">
       <div class="lobby-card">
-        <h1>공정의 법정 · 로비</h1>
+        <h1>염라의 법정 · 로비</h1>
         <div class="lobby-meta" id="lobbyMeta"></div>
         <div class="lobby-summary" id="lobbySummary"></div>
         <div class="lobby-actions" id="lobbyActions"></div>
@@ -588,11 +635,8 @@
     <section id="screen-ingame" class="screen" aria-label="재판">
       <div class="trial-shell">
         <aside class="col right-stack" aria-label="ACTION">
-          <div class="panel">
-            <div class="panel-title">법정</div>
-            <div class="panel-body hud">
-              <div id="courtMeta"></div>
-            </div>
+          <div class="panel panel-court-name" aria-label="염라의 법정">
+            <div class="panel-body hud" id="courtMeta">염라의 법정</div>
           </div>
 
           <div class="panel" style="min-height:6rem" aria-label="빈 레이아웃">
@@ -616,17 +660,22 @@
           </button>
 
           <div class="action-list" id="actionList"></div>
-          <div class="panel">
-            <div class="panel-title">법정시간</div>
+          <div class="panel panel-court-time">
+            <div class="panel-title">
+              <span class="panel-title-label">
+                <img class="panel-title-icon" src="assets/images/ui/icon_court_time.png" alt="" aria-hidden="true">
+                <span>법정시간</span>
+              </span>
+              <span id="timeValue">0:00</span>
+            </div>
             <div class="panel-body hud">
               <div class="hud-row">
                 <div class="seg-track" id="timeSegs"></div>
-                <span class="hud-value" id="timeValue">0:00</span>
               </div>
             </div>
           </div>
           <div class="hint">
-            <span>↑↓ 이동 · Enter 선택 · Tab 전환</span>
+            <span>↑↓ 메뉴 · Enter 선택 · Tab 영역</span>
             <span>1 사건 · Space 심문 · V 판결</span>
           </div>
         </aside>
@@ -1048,28 +1097,23 @@
           return (ui._trialActions || []).length || 4;
         }
 
+        function trialFocusAreas() {
+          return ["actions", "profile", "record", "empty"];
+        }
+
+        function moveFocusArea(dir) {
+          const areas = trialFocusAreas();
+          let idx = areas.indexOf(ui.focusArea);
+          if (idx < 0) idx = 0;
+          ui.focusArea = areas[(idx + dir + areas.length) % areas.length];
+          refreshTrial();
+        }
+
         function moveTrialSelection(dir) {
-          const total = actionCount() + 3;
-          if (!total) return;
-          const current =
-            ui.focusArea === "actions"
-              ? ui.actionIndex
-              : ui.focusArea === "record"
-                ? actionCount()
-                : ui.focusArea === "profile"
-                  ? actionCount() + 1
-                  : actionCount() + 2;
-          const next = (current + dir + total) % total;
-          if (next < actionCount()) {
-            ui.focusArea = "actions";
-            ui.actionIndex = next;
-          } else if (next === actionCount()) {
-            ui.focusArea = "record";
-          } else if (next === actionCount() + 1) {
-            ui.focusArea = "profile";
-          } else {
-            ui.focusArea = "empty";
-          }
+          if (ui.focusArea !== "actions") return;
+          const n = actionCount();
+          if (!n) return;
+          ui.actionIndex = (ui.actionIndex + dir + n) % n;
           refreshTrial();
         }
 
@@ -1166,7 +1210,7 @@
         function renderCourt() {
           const s = Game.state;
           document.getElementById("courtMeta").textContent =
-            s.courtName || "공정의 법정";
+            s.courtName || "염라의 법정";
           document.getElementById("trialSubject").textContent = "재판 중: " + s.name;
         }
 
@@ -1981,10 +2025,7 @@
           if (ui.screen !== "ingame" || !Game.state || Game.state.phase !== "trial") return;
           if (e.key === "Tab") {
             e.preventDefault();
-            if (ui.focusArea === "actions") ui.focusArea = "record";
-            else if (ui.focusArea === "record") ui.focusArea = "profile";
-            else ui.focusArea = "actions";
-            refreshTrial();
+            moveFocusArea(e.shiftKey ? -1 : 1);
             playSfx("select");
           } else if (ui.focusArea === "profile" && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
             e.preventDefault();
@@ -1994,11 +2035,11 @@
             e.preventDefault();
             moveEmptySelection(e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1);
             playSfx("select");
-          } else if (ui.focusArea === "record" && (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown")) {
+          } else if (ui.focusArea === "record" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
             e.preventDefault();
-            moveRecordPage(e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 1);
+            moveRecordPage(e.key === "ArrowLeft" ? -1 : 1);
             playSfx("select");
-          } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+          } else if (ui.focusArea === "actions" && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
             e.preventDefault();
             moveTrialSelection(e.key === "ArrowDown" ? 1 : -1);
             playSfx("select");

@@ -62,6 +62,16 @@ For a prototype, placeholder data and rough art are acceptable if the loop is pl
 - Add comments only when they clarify non-obvious game logic.
 - Preserve user-made changes in the working tree.
 
+## Change Reporting
+
+When UI or game code changes introduce, rename, or remove selectors, tell the user in the reply:
+
+- New or changed CSS classes (e.g. `.panel-court-name`)
+- New or changed element IDs (e.g. `#courtMeta`)
+- Important config/label keys that drive visible text (e.g. `GAME_CONFIG.labels.courtName`)
+
+Keep the list short and tied to what actually changed in that turn. Skip it when no identifiers changed.
+
 ## Verification
 
 Before finishing changes:

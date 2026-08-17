@@ -29,7 +29,7 @@
     },
 
     labels: {
-      courtName: "공정의 법정",
+      courtName: "염라의 법정",
       courtTime: "법정시간",
       contextAction: "추가 사실 CONTEXT 조사",
       intentAction: "감정과 의도 확인",

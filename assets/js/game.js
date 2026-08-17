@@ -171,7 +171,7 @@
       values: soul.values.slice(),
       coreConflictKeywords: soul.coreConflictKeywords.slice(),
       tendencyTags: soul.tendencyTags.slice(),
-      courtName: labels().courtName || "공정의 법정",
+      courtName: labels().courtName || "염라의 법정",
       courtTimeMinutes: game.courtTimeMinutes,
       courtTimeMaxMinutes: maxCourtMinutes(),
       courtTimeHours: hoursPerDay(),

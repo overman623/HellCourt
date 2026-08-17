@@ -1,0 +1,14 @@
+---
+description: After code changes, report new or changed class names, IDs, and key config labels
+alwaysApply: true
+---
+
+# Report changed identifiers
+
+When a change adds, renames, or removes UI/game selectors, include a short list in the reply:
+
+- CSS classes (e.g. `.action-btn`, `.panel-court-name`)
+- Element IDs (e.g. `#courtMeta`, `#eventsBtn`)
+- Config/label keys that control visible copy (e.g. `GAME_CONFIG.labels.courtName`)
+
+Only list what changed in that turn. Omit the section if nothing identifier-related changed.
