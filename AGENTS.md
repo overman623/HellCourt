@@ -72,6 +72,10 @@ When UI or game code changes introduce, rename, or remove selectors, tell the us
 
 Keep the list short and tied to what actually changed in that turn. Skip it when no identifiers changed.
 
+## Git
+
+When the user asks for a local commit in this workspace, use `git commit --no-verify` (skip hooks).
+
 ## Verification
 
 Before finishing changes:

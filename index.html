@@ -442,12 +442,16 @@
         min-height: 0;
         border: 8px solid transparent;
         border-image-source: url("assets/images/ui/record_frame.png");
-        border-image-slice: 8;
+        border-image-slice: 8 fill;
         border-image-width: 8px;
         border-image-repeat: stretch;
-        background-color: #000;
-        background-clip: padding-box;
+        background: transparent;
         image-rendering: pixelated;
+      }
+      .record-box > .panel-title,
+      .record-box > .record-page,
+      .record-box > .record-page-info {
+        background: transparent;
       }
       .right-stack { gap: 0.65rem; }
       .record-list {
@@ -461,6 +465,18 @@
         overflow: auto;
         white-space: pre-wrap;
         line-height: 1.55;
+      }
+      #recordPage.record-page {
+        color: #000000;
+        line-height: 1.55;
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent calc(1.55em - 1px),
+          #7e7d7d calc(1.55em - 1px),
+          #7e7d7d 1.55em
+        );
+        background-attachment: local;
       }
       .record-page-info {
         flex: 0 0 auto;
@@ -865,8 +881,8 @@
             <div class="panel-title" id="emptyTitle">EMPTY</div>
             <div class="record-page" id="emptyPage"></div>
           </section>
-          <section class="panel record-box" id="recordBox" aria-label="RECORD">
-            <div class="panel-title">RECORD</div>
+          <section class="panel record-box" id="recordBox" aria-label="NOTES">
+            <div class="panel-title">NOTES</div>
             <div class="record-page" id="recordPage"></div>
             <div class="record-page-info" id="recordPageInfo">PAGE 0/0</div>
           </section>
