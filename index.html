@@ -9,7 +9,7 @@
       :root {
         --bg: #050505;
         --panel: rgba(0, 0, 0, 0.74);
-        --panel-soft: rgba(20, 20, 20, 0.88);
+        --panel-soft: #000000;
         --text: #f2f2f2;
         --muted: rgba(242, 242, 242, 0.58);
         --line: rgba(242, 242, 242, 0.56);
@@ -188,6 +188,20 @@
         min-height: 0;
       }
       .action-list { display: flex; flex-direction: column; gap: 0.45rem; }
+      /* 모서리가 잘린 프레임 이미지를 9-slice로 늘려 버튼 테두리로 사용 */
+      .action-btn {
+        border: 10px solid transparent;
+        border-image-source: url("assets/images/ui/btn_frame.png");
+        border-image-slice: 10;
+        border-image-width: 10px;
+        border-image-repeat: stretch;
+        background-color: var(--panel-soft);
+        background-clip: padding-box;
+        padding: 0.35rem 0.5rem;
+        min-height: 3rem;
+        flex: 0 0 auto;
+        image-rendering: pixelated;
+      }
       .action-btn .sub {
         display: block;
         margin-top: 0.18rem;
@@ -196,9 +210,9 @@
         line-height: 1.35;
       }
       .action-btn.selected {
-        outline: 2px solid var(--focus);
-        outline-offset: -2px;
-        background: rgba(255,255,255,0.08);
+        outline: none;
+        background-color: rgba(255,255,255,0.12);
+        filter: drop-shadow(0 0 2px rgba(255,255,255,0.85));
       }
       .event-row, .record-row {
         padding: 0.55rem 0.65rem;
