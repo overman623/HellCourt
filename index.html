@@ -462,6 +462,14 @@
         white-space: pre-wrap;
         line-height: 1.55;
       }
+      .record-page-info {
+        flex: 0 0 auto;
+        padding: 0.35rem 0.75rem 0.55rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+      }
       .record-box.selected {
         outline: none;
         background-color: rgba(255,255,255,0.08);
@@ -858,11 +866,9 @@
             <div class="record-page" id="emptyPage"></div>
           </section>
           <section class="panel record-box" id="recordBox" aria-label="RECORD">
-            <div class="panel-title panel-title-row">
-              <span>RECORD</span>
-              <span id="recordPageInfo">0 / 0</span>
-            </div>
+            <div class="panel-title">RECORD</div>
             <div class="record-page" id="recordPage"></div>
+            <div class="record-page-info" id="recordPageInfo">PAGE 0/0</div>
           </section>
         </aside>
       </div>
@@ -1551,7 +1557,7 @@
           ui.recordPage = Math.max(0, Math.min(ui.recordPage, pages.length - 1));
           const page = pages[ui.recordPage];
           document.getElementById("recordBox").classList.toggle("selected", ui.focusArea === "record");
-          document.getElementById("recordPageInfo").textContent = (ui.recordPage + 1) + " / " + pages.length;
+          document.getElementById("recordPageInfo").textContent = "PAGE " + (ui.recordPage + 1) + "/" + pages.length;
           document.getElementById("recordPage").textContent = page.text;
         }
 
