@@ -339,16 +339,6 @@
         line-height: 1.55;
         overflow: auto;
       }
-      .record-pager {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.55rem 0.75rem;
-        border-bottom: 1px solid rgba(255,255,255,0.2);
-        color: var(--muted);
-        font-size: 0.82rem;
-      }
       .record-page {
         flex: 1;
         padding: 0.9rem 1rem;
@@ -639,9 +629,8 @@
             <div class="record-page" id="emptyPage"></div>
           </section>
           <section class="panel record-box" id="recordBox" aria-label="RECORD">
-            <div class="panel-title">RECORD</div>
-            <div class="record-pager">
-              <span id="recordTitle">기록</span>
+            <div class="panel-title panel-title-row">
+              <span>RECORD</span>
               <span id="recordPageInfo">0 / 0</span>
             </div>
             <div class="record-page" id="recordPage"></div>
@@ -1287,7 +1276,6 @@
           ui.recordPage = Math.max(0, Math.min(ui.recordPage, pages.length - 1));
           const page = pages[ui.recordPage];
           document.getElementById("recordBox").classList.toggle("selected", ui.focusArea === "record");
-          document.getElementById("recordTitle").textContent = page.title;
           document.getElementById("recordPageInfo").textContent = (ui.recordPage + 1) + " / " + pages.length;
           document.getElementById("recordPage").textContent = page.text;
         }
