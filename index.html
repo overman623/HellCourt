@@ -985,6 +985,13 @@
         color: var(--muted);
         font-size: 0.82rem;
         letter-spacing: 0.08em;
+        flex: 0 0 auto;
+      }
+      #recordTitle {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .record-box.selected {
         outline: none;
@@ -1222,17 +1229,84 @@
       }
 
       #screen-end {
-        justify-content: flex-end;
-        align-items: center;
+        justify-content: stretch;
+        align-items: stretch;
         background: #050505 center / cover no-repeat;
-        padding-bottom: clamp(3rem, 10vh, 5.5rem);
+        padding: 0;
       }
-      .end-overlay {
-        min-width: min(420px, 90vw);
-        border: 1px solid var(--line);
-        background: rgba(0,0,0,0.62);
-        padding: 1.4rem;
+      .end-layout {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 0;
+        padding: clamp(1.4rem, 4.5vh, 3rem) clamp(1.6rem, 5vw, 4.2rem);
+      }
+      #screen-end.is-heaven .end-layout {
+        color: #fff8e8;
+        background: linear-gradient(180deg, rgba(18, 14, 8, 0.46) 0%, transparent 28%, transparent 58%, rgba(10, 8, 4, 0.74) 100%);
+      }
+      #screen-end.is-hell .end-layout {
+        color: #ffe8d4;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.56) 0%, transparent 30%, transparent 56%, rgba(0, 0, 0, 0.84) 100%);
+      }
+      .end-header {
+        max-width: 28rem;
+      }
+      .end-kicker {
+        margin: 0 0 0.35rem;
+        letter-spacing: 0.28em;
+        font-size: 0.82rem;
+        opacity: 0.82;
+        text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+      }
+      #endTitle {
+        margin: 0;
+        font-size: clamp(2.4rem, 6vw, 4.2rem);
+        letter-spacing: 0.18em;
+        font-weight: 700;
+        line-height: 1.1;
+        text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
+      }
+      .end-copy {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1.5rem 2.5rem;
+      }
+      .end-main {
+        max-width: 34rem;
+        min-width: 0;
+      }
+      .end-lead {
+        margin: 0 0 0.45rem;
+        font-size: 1.12rem;
+        line-height: 1.55;
+        text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+      }
+      .end-time {
+        margin: 0;
+        opacity: 0.88;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+      }
+      .end-footer {
+        width: min(22rem, 100%);
+        flex-shrink: 0;
+      }
+      #screen-end .end-menu-item {
         text-align: center;
+        background: rgba(0, 0, 0, 0.62);
+      }
+      @media (max-width: 720px) {
+        .end-copy {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .end-footer {
+          width: 100%;
+        }
       }
       #toast {
         position: fixed;
@@ -1442,10 +1516,10 @@
                 </div>
               </div>
               <div class="record-panel-wrap">
-                <section class="panel record-box" id="recordBox" aria-label="NOTES">
+                <section class="panel record-box" id="recordBox" aria-label="사건 기록">
                   <div class="record-page record-page-top" id="recordTopPage" aria-hidden="true"></div>
                   <div class="panel-title panel-title-row">
-                    <span>NOTES</span>
+                    <span id="recordTitle">사건 기록</span>
                     <span class="record-page-count" id="recordPageCount">0/0</span>
                   </div>
                   <div class="record-page" id="recordPage"></div>
@@ -1495,12 +1569,21 @@
     </section>
 
     <section id="screen-end" class="screen" aria-label="판결 결과">
-      <div class="end-overlay">
-        <div id="endTitle" style="font-size:1.55rem;letter-spacing:0.1em;margin-bottom:0.5rem"></div>
-        <div id="endSub" style="color:var(--muted);line-height:1.45"></div>
-        <nav class="end-menu" id="endMenu" aria-label="판결 후 메뉴">
-        </nav>
-      </div>
+      <article class="end-layout">
+        <header class="end-header">
+          <p class="end-kicker">판결</p>
+          <h2 id="endTitle"></h2>
+        </header>
+        <div class="end-copy">
+          <main class="end-main">
+            <p id="endLead" class="end-lead"></p>
+            <p id="endSub" class="end-time"></p>
+          </main>
+          <footer class="end-footer">
+            <nav class="end-menu" id="endMenu" aria-label="판결 후 메뉴"></nav>
+          </footer>
+        </div>
+      </article>
     </section>
 
     <div class="modal-layer" id="verdictConfirmModal" aria-label="판결 확인 팝업">
@@ -1546,6 +1629,8 @@
           bubbleAwaiting: false,
           bubbleLocked: false,
           bubbleOpensRecord: false,
+          bubbleIgnoreEnter: false,
+          bubbleShownAt: 0,
         };
 
         const titleItems = [
@@ -1596,15 +1681,16 @@
           },
           play(track) {
             if (this.muted) return;
-            const path = this.paths()[track || "court"];
+            const next = track || "court";
+            const path = this.paths()[next];
             if (!path) return;
             if (!this.audio) {
               this.audio = new Audio();
-              this.audio.loop = true;
             }
-            if (this.track !== track) {
+            this.audio.loop = next === "court";
+            if (this.track !== next) {
               this.audio.src = path;
-              this.track = track;
+              this.track = next;
             }
             this.audio.volume = this.volume();
             this.audio.play().catch(function () {});
@@ -1818,6 +1904,7 @@
           ui.recordPage = 0;
           showScreen("ingame");
           refreshTrial(true);
+          BGM.play("court");
         }
 
         function formatCostMinutes(n) {
@@ -2213,8 +2300,12 @@
           const pages = [];
           s.events.forEach(function (ev, i) {
             const head = (i + 1) + ". " + (ev.year || "????") + " · " + ev.title;
+            const year = ev.year || "????";
+            const eventTitle = ev.title || "이름 없는 사건";
             pages.push({
               eventId: ev.id,
+              year: year,
+              eventTitle: eventTitle,
               title: head + " · 기본 사건",
               text:
                 head +
@@ -2224,6 +2315,8 @@
             });
             pages.push({
               eventId: ev.id,
+              year: year,
+              eventTitle: eventTitle,
               title: head + " · 추가 사실",
               text:
                 head +
@@ -2232,6 +2325,8 @@
             });
             pages.push({
               eventId: ev.id,
+              year: year,
+              eventTitle: eventTitle,
               title: head + " · 감정과 의도",
               text:
                 head +
@@ -2247,6 +2342,12 @@
           ui.recordPage = Math.max(0, Math.min(ui.recordPage, pages.length - 1));
           const page = pages[ui.recordPage];
           document.getElementById("recordBox").classList.toggle("selected", ui.focusArea === "record");
+          const recordTitle = document.getElementById("recordTitle");
+          if (recordTitle) {
+            recordTitle.textContent = page.eventTitle
+              ? (page.year || "????") + " · " + page.eventTitle
+              : (page.title || "기록 없음");
+          }
           document.getElementById("recordPageCount").textContent = (ui.recordPage + 1) + "/" + pages.length;
           document.getElementById("recordPageInfo").textContent = "PAGE " + (ui.recordPage + 1);
           document.getElementById("recordPage").textContent = page.text;
@@ -2392,6 +2493,8 @@
           while (ui.unlockTimers.length) clearTimeout(ui.unlockTimers.pop());
         }
 
+        const BUBBLE_DISMISS_GRACE_MS = 700;
+
         function dismissBubbles() {
           clearUnlockTimers();
           const player = document.getElementById("playerBubble");
@@ -2400,6 +2503,8 @@
           bubble.classList.remove("show", "awaiting");
           ui.bubbleAwaiting = false;
           ui.bubbleLocked = false;
+          ui.bubbleIgnoreEnter = false;
+          ui.bubbleShownAt = 0;
           const shouldOpenRecord = ui.bubbleOpensRecord;
           ui.bubbleOpensRecord = false;
           if (shouldOpenRecord) openRecordAtCurrentPage();
@@ -2410,6 +2515,8 @@
           ui.bubbleAwaiting = false;
           ui.bubbleLocked = true;
           ui.bubbleOpensRecord = true;
+          ui.bubbleIgnoreEnter = true;
+          ui.bubbleShownAt = 0;
           const player = document.getElementById("playerBubble");
           const bubble = document.getElementById("soulBubble");
           const frame = document.getElementById("courtFrame");
@@ -2428,6 +2535,7 @@
             void bubble.offsetWidth;
             bubble.classList.add("show", "awaiting");
             ui.bubbleAwaiting = true;
+            ui.bubbleShownAt = Date.now();
           }, 1050));
           frame.classList.add("pulse");
           record.classList.add("updated");
@@ -2628,24 +2736,7 @@
           if (!opened.ok) return;
           const r = Game.submitVerdict(ui.verdictChoice, "");
           if (!r.ok) return;
-          const L = Game.labels();
-          const art = Game.contentArt();
-          const end = document.getElementById("screen-end");
-          if (ui.verdictChoice === "heaven" && art.verdictHeaven) {
-            end.style.backgroundImage = 'url("' + art.verdictHeaven + '")';
-            BGM.play("heaven");
-          } else if (ui.verdictChoice === "hell" && art.verdictHell) {
-            end.style.backgroundImage = 'url("' + art.verdictHell + '")';
-            BGM.play("hell");
-          } else {
-            end.style.backgroundImage = "";
-          }
-          document.getElementById("endTitle").textContent = ui.verdictChoice === "heaven" ? L.heaven : L.hell;
-          document.getElementById("endSub").textContent =
-            r.summary.deceasedName + "에 대한 판결이 확정되었다.\n남은 법정시간 " + r.summary.courtTimeLeftLabel;
-          ui.endIndex = 0;
-          renderEndMenu();
-          showScreen("end");
+          showVerdictEnd(r.summary);
         }
 
         function resetTrialUi() {
@@ -2666,6 +2757,7 @@
           resetTrialUi();
           showScreen("ingame");
           refreshTrial(true);
+          BGM.play("court");
         }
 
         function showLobbyFromEnd() {
@@ -2726,28 +2818,35 @@
           });
         }
 
-        function submitVerdict() {
-          const reason = document.getElementById("verdictReason").value || "";
-          const r = Game.submitVerdict(ui.verdictChoice, reason);
-          if (!r.ok) return;
+        function showVerdictEnd(summary) {
           const L = Game.labels();
           const art = Game.contentArt();
           const end = document.getElementById("screen-end");
-          if (ui.verdictChoice === "heaven" && art.verdictHeaven) {
+          const isHeaven = ui.verdictChoice === "heaven";
+          end.classList.toggle("is-heaven", isHeaven);
+          end.classList.toggle("is-hell", !isHeaven);
+          if (isHeaven && art.verdictHeaven) {
             end.style.backgroundImage = 'url("' + art.verdictHeaven + '")';
             BGM.play("heaven");
-          } else if (ui.verdictChoice === "hell" && art.verdictHell) {
+          } else if (!isHeaven && art.verdictHell) {
             end.style.backgroundImage = 'url("' + art.verdictHell + '")';
             BGM.play("hell");
           } else {
             end.style.backgroundImage = "";
           }
-          document.getElementById("endTitle").textContent = ui.verdictChoice === "heaven" ? L.heaven : L.hell;
-          document.getElementById("endSub").textContent =
-            r.summary.deceasedName + "에 대한 판결이 확정되었다.\n남은 법정시간 " + r.summary.courtTimeLeftLabel;
+          document.getElementById("endTitle").textContent = isHeaven ? L.heaven : L.hell;
+          document.getElementById("endLead").textContent = summary.deceasedName + "에 대한 판결이 확정되었다.";
+          document.getElementById("endSub").textContent = "남은 법정시간 " + summary.courtTimeLeftLabel;
           ui.endIndex = 0;
           renderEndMenu();
           showScreen("end");
+        }
+
+        function submitVerdict() {
+          const reason = document.getElementById("verdictReason").value || "";
+          const r = Game.submitVerdict(ui.verdictChoice, reason);
+          if (!r.ok) return;
+          showVerdictEnd(r.summary);
         }
 
         function renderEndMenu() {
@@ -2996,10 +3095,13 @@
           if (ui.screen !== "ingame" || !Game.state || Game.state.phase !== "trial") return;
           if (ui.bubbleLocked) {
             e.preventDefault();
-            if (e.key === "Enter" && ui.bubbleAwaiting) {
-              dismissBubbles();
-              playSfx("select");
-            }
+            if (e.repeat) return;
+            if (e.key !== "Enter") return;
+            if (ui.bubbleIgnoreEnter) return;
+            if (!ui.bubbleAwaiting) return;
+            if (!ui.bubbleShownAt || Date.now() - ui.bubbleShownAt < BUBBLE_DISMISS_GRACE_MS) return;
+            dismissBubbles();
+            playSfx("select");
             return;
           }
           if (e.key === "Tab") {
@@ -3065,6 +3167,10 @@
               refreshTrial();
             }
           }
+        });
+
+        document.addEventListener("keyup", function (e) {
+          if (e.key === "Enter") ui.bubbleIgnoreEnter = false;
         });
 
         BGM.loadMute();
