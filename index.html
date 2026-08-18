@@ -105,7 +105,7 @@
         justify-content: center;
       }
       #courtMeta {
-        font-size: 1rem;
+        font-size: 2rem;
         letter-spacing: 0.06em;
         line-height: 1.35;
         text-align: center;
@@ -459,7 +459,7 @@
         position: absolute;
         inset: 0;
         z-index: 0;
-        background-image: url("assets/images/ui/soul_ghost.png");
+        background-image: var(--soul-sprite, url("assets/images/ui/soul_ghost.png"));
         background-position: center 48%;
         background-size: auto 50%;
         background-repeat: no-repeat;
@@ -503,6 +503,30 @@
         left: 50%;
         top: 16%;
         transform: translate(-50%, 12px);
+        max-height: min(52%, 24rem);
+        overflow: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(242,242,242,0.72) rgba(0,0,0,0.35);
+      }
+      .soul-bubble.awaiting {
+        padding-bottom: 1.7rem;
+        outline: none;
+        filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.7),
+          0 0 0 1px rgba(0, 0, 0, 0.55),
+          0 18px 42px rgba(0, 0, 0, 0.42);
+        border-color: #ffffff;
+      }
+      .soul-bubble.awaiting::before {
+        content: "Enter로 닫기";
+        position: absolute;
+        right: 0.8rem;
+        bottom: 0.45rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        color: rgba(242, 242, 242, 0.72);
+        pointer-events: none;
       }
       .player-bubble::after,
       .soul-bubble::after {
@@ -524,10 +548,12 @@
         transform: translateX(-50%) rotate(45deg);
       }
       .player-bubble.show {
-        animation: playerQuestion 1.55s ease both;
+        animation: playerQuestion 0.45s ease both;
+        opacity: 1;
       }
       .soul-bubble.show {
-        animation: bubbleReveal 3.6s ease both;
+        animation: bubbleReveal 0.45s ease both;
+        opacity: 1;
       }
       .player-bubble.context,
       .soul-bubble.context {
@@ -593,6 +619,7 @@
         display: none;
       }
       .record-panel-overlay-border {
+        position: relative;
         flex: 1 1 auto;
         align-self: stretch;
         min-height: 0;
@@ -608,7 +635,18 @@
         flex-direction: column;
         justify-content: center;
       }
+      .record-panel-overlay-grid {
+        position: absolute;
+        inset: 0.55rem;
+        z-index: 0;
+        background-image:
+          repeating-linear-gradient(to right, #6d6d6f 0, #6d6d6f 1px, transparent 1px, transparent 24px),
+          repeating-linear-gradient(to bottom, #6d6d6f 0, #6d6d6f 1px, transparent 1px, transparent 24px);
+        pointer-events: none;
+      }
       .record-panel-overlay-title {
+        position: relative;
+        z-index: 1;
         flex: 0 0 auto;
         align-self: stretch;
         margin: 0;
@@ -658,10 +696,28 @@
         overflow: hidden;
       }
       #emptyBox {
+        position: relative;
         display: flex;
         flex-direction: column;
         min-height: 0;
         border-color: #ffffff;
+      }
+      #emptyBox > * {
+        position: relative;
+        z-index: 1;
+      }
+      #emptyBox.selected {
+        outline: none;
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+      }
+      #emptyBox.selected::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: rgba(0, 0, 0, 0.55);
+        pointer-events: none;
       }
       #emptyBox.is-inactive {
         visibility: hidden;
@@ -1121,15 +1177,11 @@
 
       @keyframes bubbleReveal {
         0% { opacity: 0; transform: translate(-50%, 16px) scale(0.98); }
-        12% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-        82% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-        100% { opacity: 0; transform: translate(-50%, -8px) scale(0.99); }
+        100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
       }
       @keyframes playerQuestion {
         0% { opacity: 0; transform: translate(-12px, 12px) scale(0.98); }
-        16% { opacity: 1; transform: translate(0, 0) scale(1); }
-        78% { opacity: 1; transform: translate(0, 0) scale(1); }
-        100% { opacity: 0; transform: translate(8px, -4px) scale(0.99); }
+        100% { opacity: 1; transform: translate(0, 0) scale(1); }
       }
       @keyframes courtPulse {
         0% { box-shadow: inset 0 0 0 rgba(255,255,255,0); }
@@ -1301,7 +1353,8 @@
             <div class="record-panel-frame">
               <div class="record-panel-overlay" aria-hidden="true">
                 <div class="record-panel-overlay-border">
-                  <div class="record-panel-overlay-title">인생사건메모</div>
+                  <div class="record-panel-overlay-grid" aria-hidden="true"></div>
+                  <div class="record-panel-overlay-title">인생 사건 기록</div>
                 </div>
               </div>
               <div class="record-panel-wrap">
@@ -1406,6 +1459,9 @@
           popupIndex: 0,
           settingsReturn: "title",
           unlockTimers: [],
+          bubbleAwaiting: false,
+          bubbleLocked: false,
+          bubbleOpensRecord: false,
         };
 
         const titleItems = [
@@ -1800,7 +1856,14 @@
 
         function renderActionPanel() {
           const panel = document.getElementById("actionPanel");
-          if (panel) panel.classList.toggle("selected", ui.focusArea === "actions");
+          if (!panel) return;
+          const actionActive =
+            ui.focusArea === "actions" ||
+            ui.emptyMode === "events" ||
+            ui.emptyMode === "interrogate" ||
+            ui.emptyMode === "verdict" ||
+            ui.emptyMode === "menu";
+          panel.classList.toggle("selected", actionActive);
         }
 
         function isActionSelected(id, index) {
@@ -1857,6 +1920,9 @@
           document.getElementById("courtMeta").textContent =
             s.courtName || "염라의 법정";
           document.getElementById("trialSubject").textContent = "재판 중: " + s.name;
+          if (s.sprite) {
+            document.documentElement.style.setProperty("--soul-sprite", 'url("' + s.sprite + '")');
+          }
         }
 
         function renderCourtBottom() {
@@ -1921,7 +1987,12 @@
           const verdictArt = document.getElementById("emptyVerdictArt");
           const menuArt = document.getElementById("emptyMenuArt");
           const eventsArt = document.getElementById("emptyEventsArt");
-          box.classList.toggle("selected", ui.focusArea === "empty");
+          const emptyActive =
+            ui.focusArea === "empty" ||
+            ui.emptyMode === "interrogate" ||
+            ui.emptyMode === "verdict" ||
+            ui.emptyMode === "menu";
+          box.classList.toggle("selected", emptyActive);
           const s = Game.state;
           const showInterrogateArt = ui.emptyMode === "interrogate" && s && s.events && s.events.length;
           const showVerdictArt = ui.emptyMode === "verdict";
@@ -2100,6 +2171,21 @@
           if (overlay) overlay.hidden = !active;
         }
 
+        function openRecordAtCurrentPage() {
+          ui.focusArea = "record";
+          ui.emptyMode = "events";
+          ui.actionIndex = 0;
+          setRecordOverlayActive(false);
+          const pages = recordPages();
+          if (pages.length) syncEventFromRecordPage(pages[ui.recordPage]);
+          renderEvents();
+          renderActions();
+          renderInterrogate();
+          renderActionPanel();
+          renderEmpty();
+          renderRecord();
+        }
+
         function openEventRecord() {
           ui.recordPage = 0;
           ui.focusArea = "record";
@@ -2132,10 +2218,9 @@
           document.getElementById("courtSub").textContent = sub || "";
         }
 
-        function previewAnswer(text) {
-          const value = String(text || "").replace(/\s+/g, " ").trim();
-          if (!value) return "...";
-          return value.length > 94 ? value.slice(0, 94) + "..." : value;
+        function formatSoulSpeech(text) {
+          const value = String(text || "").replace(/\r\n/g, "\n").trim();
+          return value || "...";
         }
 
         function interrogationQuestion(type, eventTitle) {
@@ -2149,8 +2234,24 @@
           while (ui.unlockTimers.length) clearTimeout(ui.unlockTimers.pop());
         }
 
+        function dismissBubbles() {
+          clearUnlockTimers();
+          const player = document.getElementById("playerBubble");
+          const bubble = document.getElementById("soulBubble");
+          player.classList.remove("show");
+          bubble.classList.remove("show", "awaiting");
+          ui.bubbleAwaiting = false;
+          ui.bubbleLocked = false;
+          const shouldOpenRecord = ui.bubbleOpensRecord;
+          ui.bubbleOpensRecord = false;
+          if (shouldOpenRecord) openRecordAtCurrentPage();
+        }
+
         function showUnlockEffect(type, text, eventTitle) {
           clearUnlockTimers();
+          ui.bubbleAwaiting = false;
+          ui.bubbleLocked = true;
+          ui.bubbleOpensRecord = true;
           const player = document.getElementById("playerBubble");
           const bubble = document.getElementById("soulBubble");
           const frame = document.getElementById("courtFrame");
@@ -2164,10 +2265,11 @@
           void player.offsetWidth;
           player.classList.add("show");
           ui.unlockTimers.push(setTimeout(function () {
-            bubble.textContent = "“" + previewAnswer(text) + "”";
+            bubble.textContent = "“" + formatSoulSpeech(text) + "”";
             bubble.className = "soul-bubble " + type;
             void bubble.offsetWidth;
-            bubble.classList.add("show");
+            bubble.classList.add("show", "awaiting");
+            ui.bubbleAwaiting = true;
           }, 1050));
           frame.classList.add("pulse");
           record.classList.add("updated");
@@ -2219,7 +2321,7 @@
           ui.recordPage = ui.eventIndex * 3 + 1;
           setCourtText("추가 사실 조사", r.event.title);
           refreshTrial();
-          showUnlockEffect("context", r.text, r.event.title);
+          showUnlockEffect("context", r.speech, r.event.title);
         }
 
         function doIntent() {
@@ -2234,7 +2336,7 @@
           ui.recordPage = ui.eventIndex * 3 + 2;
           setCourtText("감정과 의도 확인", r.event.title);
           refreshTrial();
-          showUnlockEffect("intent", r.text, r.event.title);
+          showUnlockEffect("intent", r.speech, r.event.title);
         }
 
         function doInterrogate() {
@@ -2610,12 +2712,6 @@
           moveRecordPage(side.classList.contains("is-left") ? -1 : 1);
           if (!changed) playSfx("select");
         });
-        document.getElementById("playerBubble").addEventListener("animationend", function () {
-          this.classList.remove("show");
-        });
-        document.getElementById("soulBubble").addEventListener("animationend", function () {
-          this.classList.remove("show");
-        });
         document.getElementById("courtFrame").addEventListener("animationend", function () {
           this.classList.remove("pulse");
         });
@@ -2736,6 +2832,14 @@
             return;
           }
           if (ui.screen !== "ingame" || !Game.state || Game.state.phase !== "trial") return;
+          if (ui.bubbleLocked) {
+            e.preventDefault();
+            if (e.key === "Enter" && ui.bubbleAwaiting) {
+              dismissBubbles();
+              playSfx("select");
+            }
+            return;
+          }
           if (e.key === "Tab") {
             e.preventDefault();
             moveFocusArea(e.shiftKey ? -1 : 1);

@@ -64,6 +64,7 @@
       ageAtDeath: deceased.ageAtDeath != null ? deceased.ageAtDeath : null,
       gender: deceased.gender || "",
       job: deceased.job || "",
+      sprite: deceased.sprite || raw.sprite || "assets/images/ui/soul_ghost.png",
       summary: deceased.profileNote || deceased.summary || "",
       intro: deceased.intro || deceased.summary || "",
       grade: deceased.grade || raw.grade || "",
@@ -81,6 +82,8 @@
           summary: ev.summary || ev.basic || "",
           contextText: ev.contextText || context.text || ev.factText || "",
           intentText: ev.intentText || intent.text || ev.emotionText || "",
+          contextSpeech: ev.contextSpeech || context.speech || "",
+          intentSpeech: ev.intentSpeech || intent.speech || "",
           contextKeywords: (ev.contextKeywords || context.keywords || ev.factKeywords || []).slice(),
           intentKeywords: (ev.intentKeywords || intent.keywords || ev.emotionKeywords || []).slice(),
           linkText: ev.linkText || ev.nextLink || "",
@@ -91,8 +94,19 @@
     };
   }
 
+  function shuffle(list) {
+    const next = list.slice();
+    for (let i = next.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = next[i];
+      next[i] = next[j];
+      next[j] = tmp;
+    }
+    return next;
+  }
+
   function todayRoster() {
-    return souls().map(function (raw, index) {
+    const rows = souls().map(function (raw, index) {
       const s = normalizeSoul(raw, index);
       return {
         index: index,
@@ -101,8 +115,10 @@
         summary: s.summary,
         grade: s.grade,
         verdict: null,
+        sprite: s.sprite,
       };
     });
+    return shuffle(rows);
   }
 
   const Log = {
@@ -137,6 +153,7 @@
     const raw = souls()[soulIndex];
     if (!raw) throw new Error("no soul in GAME_CONTENT");
     const soul = normalizeSoul(raw, soulIndex);
+    const row = (game.today || []).find(function (item) { return item.index === soulIndex; });
     const events = soul.events.map(function (ev) {
       return {
         id: ev.id,
@@ -146,6 +163,8 @@
         summary: ev.summary,
         contextText: ev.contextText,
         intentText: ev.intentText,
+        contextSpeech: ev.contextSpeech,
+        intentSpeech: ev.intentSpeech,
         contextKeywords: ev.contextKeywords.slice(),
         intentKeywords: ev.intentKeywords.slice(),
         linkText: ev.linkText,
@@ -165,6 +184,7 @@
       ageAtDeath: soul.ageAtDeath,
       gender: soul.gender,
       job: soul.job,
+      sprite: (row && row.sprite) || soul.sprite || "assets/images/ui/soul_ghost.png",
       summary: soul.summary,
       intro: soul.intro,
       grade: soul.grade,
@@ -372,7 +392,13 @@
         costMinutes: cost,
         courtTimeMinutes: s.courtTimeMinutes,
       });
-      return { ok: true, event: ev, text: ev.contextText, courtTimeMinutes: s.courtTimeMinutes };
+      return {
+        ok: true,
+        event: ev,
+        text: ev.contextText,
+        speech: ev.contextSpeech || ev.contextText,
+        courtTimeMinutes: s.courtTimeMinutes,
+      };
     },
     investigateIntent() {
       const s = this.state;
@@ -393,7 +419,13 @@
         costMinutes: cost,
         courtTimeMinutes: s.courtTimeMinutes,
       });
-      return { ok: true, event: ev, text: ev.intentText, courtTimeMinutes: s.courtTimeMinutes };
+      return {
+        ok: true,
+        event: ev,
+        text: ev.intentText,
+        speech: ev.intentSpeech || ev.intentText,
+        courtTimeMinutes: s.courtTimeMinutes,
+      };
     },
     canInvestigateContext() {
       const s = this.state;
