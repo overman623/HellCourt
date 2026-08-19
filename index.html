@@ -98,8 +98,9 @@
         border: 1px solid #ffffff;
         background: #000000;
         flex: 0 0 auto;
-        min-height: 6rem;
-        max-height: 8rem;
+        height: 5.5rem;
+        min-height: 5.5rem;
+        max-height: 5.5rem;
         display: flex;
         flex-direction: column;
         min-width: 0;
@@ -112,6 +113,7 @@
         flex-direction: column;
         justify-content: center;
       }
+      .panel-court-name .panel-body,
       #courtMeta {
         font-size: 2rem;
         letter-spacing: 0.06em;
@@ -163,7 +165,8 @@
         image-rendering: pixelated;
         pointer-events: none;
       }
-      .panel-court-time #timeValue {
+      .panel-court-time #timeValue,
+      .panel-court-time #lobbyTimeValue {
         min-width: 3.5rem;
         text-align: right;
         color: var(--text);
@@ -182,7 +185,7 @@
         gap: 0.8rem;
         align-items: stretch;
       }
-      .title-item, .settings-item, .end-menu-item, .lobby-btn, .action-btn, .verdict-choice, .verdict-submit {
+      .title-item, .settings-item, .end-menu-item, .action-btn, .verdict-choice, .verdict-submit {
         border: 1px solid var(--line);
         background: var(--panel-soft);
         padding: 0.72rem 1rem;
@@ -199,17 +202,17 @@
         cursor: default;
       }
 
-      #screen-settings, #screen-lobby, #screen-verdict, #screen-expedite {
+      #screen-settings, #screen-verdict, #screen-expedite {
         background: #050505;
         padding: 2rem;
       }
-      .settings-card, .lobby-card, .verdict-card, .expedite-card {
+      .settings-card, .verdict-card, .expedite-card {
         width: min(860px, 94vw);
         border: 1px solid var(--line);
         background: var(--panel);
         padding: 1.25rem;
       }
-      .settings-card h1, .lobby-card h1, .verdict-card h2, .expedite-card h2 {
+      .settings-card h1, .verdict-card h2, .expedite-card h2 {
         margin: 0 0 1rem;
         font-size: 1.35rem;
         letter-spacing: 0.08em;
@@ -221,25 +224,7 @@
         margin-bottom: 1rem;
         color: var(--muted);
       }
-      .lobby-meta, .lobby-summary {
-        white-space: pre-wrap;
-        line-height: 1.55;
-      }
-      .lobby-meta { color: var(--muted); margin-bottom: 0.8rem; }
-      .lobby-summary {
-        min-height: 8rem;
-        border: 1px solid rgba(255,255,255,0.2);
-        padding: 0.9rem;
-        margin-bottom: 1rem;
-      }
-      .lobby-actions {
-        display: flex;
-        gap: 0.65rem;
-        flex-wrap: wrap;
-      }
-      .lobby-btn.primary { border-color: var(--heaven); color: var(--heaven); }
-
-      #screen-ingame {
+      #screen-ingame, #screen-lobby {
         align-items: stretch;
         justify-content: stretch;
         background: #050505;
@@ -297,8 +282,59 @@
         gap: 0.65rem;
       }
       /* 우측 EMPTY를 중앙 '재판 중' 패널 아래로 맞춤 */
-      .col[aria-label="RIGHT SIDE"] {
+      .col[aria-label="RIGHT SIDE"],
+      .lobby-shell > .col:last-child {
         padding-top: calc(24px + 1.1rem + 1.25em + 0.65rem);
+      }
+      #lobbyActionPanel {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      #lobbyActionPanel .action-list {
+        min-height: 0;
+        overflow: auto;
+      }
+      .lobby-roster {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        border-color: #ffffff;
+        background: #000000;
+      }
+      .lobby-roster-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        padding: 0.75rem;
+      }
+      .lobby-soul-row {
+        padding: 0.55rem 0.15rem 0.7rem;
+        border-bottom: 1px solid rgba(255,255,255,0.16);
+      }
+      .lobby-soul-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      .lobby-soul-row.is-done {
+        opacity: 0.55;
+      }
+      .lobby-soul-name {
+        line-height: 1.35;
+      }
+      .lobby-soul-meta {
+        color: var(--muted);
+        font-size: 0.78rem;
+        margin-top: 0.2rem;
+      }
+      .lobby-status {
+        cursor: default;
+      }
+      .lobby-status.court-info-btn::after {
+        content: none;
+      }
+      #lobbyNotesBox #lobbySummary {
+        color: #000000;
       }
       .hud {
         display: grid;
@@ -349,6 +385,9 @@
         background: transparent;
         padding: 0.4rem;
         image-rendering: pixelated;
+      }
+      #actionPanel {
+        flex: 1 1 auto;
       }
       .action-panel.selected {
         outline: none;
@@ -406,6 +445,12 @@
       }
       .action-btn.selected .sub {
         color: rgba(240, 193, 75, 0.78);
+      }
+      .action-btn.primary:not(.selected) {
+        color: var(--heaven);
+      }
+      .action-btn.primary:not(.selected) .sub {
+        color: rgba(159, 209, 255, 0.78);
       }
       .event-row, .record-row {
         padding: 0.55rem 0.65rem;
@@ -486,6 +531,16 @@
         pointer-events: none;
         image-rendering: pixelated;
       }
+      .court-frame.lobby-court-frame {
+        background-image: var(--lobby-stage, url("assets/images/ui/Lobby.png"));
+        background-position: center;
+        background-size: cover;
+        image-rendering: auto;
+      }
+      .court-frame.lobby-court-frame .court-soul,
+      .court-frame.lobby-court-frame .court-frame-cover {
+        display: none;
+      }
       .player-bubble,
       .soul-bubble {
         position: absolute;
@@ -519,6 +574,8 @@
       .soul-bubble.awaiting {
         padding-bottom: 1.7rem;
         outline: none;
+        pointer-events: auto;
+        cursor: pointer;
         filter: drop-shadow(0 0 8px var(--focus-glow));
         box-shadow:
           0 0 0 1px var(--focus-line),
@@ -527,7 +584,7 @@
         border-color: var(--focus);
       }
       .soul-bubble.awaiting::before {
-        content: "Enter로 닫기";
+        content: "클릭 또는 Enter로 닫기";
         position: absolute;
         right: 0.8rem;
         bottom: 0.45rem;
@@ -636,14 +693,24 @@
       }
       .court-caption {
         min-height: 0;
-        padding: 0.65rem 0.75rem;
+        padding: 0.55rem 0.75rem;
         background: transparent;
-        white-space: pre-wrap;
-        line-height: 1.55;
+        line-height: 1.4;
+      }
+      .court-caption #courtMain,
+      .court-caption #lobbyMeta {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .court-caption .sub {
         color: var(--muted);
-        margin-top: 0.45rem;
+        margin-top: 0.35rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;
       }
       .record-box, .right-stack {
         min-height: 0;
@@ -848,12 +915,28 @@
         background: #0a0a0a;
       }
       .empty-event {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        font: inherit;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
         white-space: pre-wrap;
         line-height: 1.55;
-        padding-bottom: 0.9rem;
+        padding: 0.55rem 0.45rem 0.9rem;
+        border-radius: 2px;
+      }
+      .empty-event:hover {
+        background: rgba(255,255,255,0.045);
+      }
+      .empty-event.is-current {
+        outline: 1px solid var(--focus);
+        outline-offset: -1px;
+        background: var(--focus-fill);
       }
       .empty-event:last-child {
-        padding-bottom: 0;
+        padding-bottom: 0.55rem;
       }
       .empty-mode-art {
         flex: 0 0 auto;
@@ -915,7 +998,8 @@
         white-space: pre-wrap;
         line-height: 1.55;
       }
-      #recordPage.record-page {
+      #recordPage.record-page,
+      #lobbySummary.record-page {
         color: #000000;
         line-height: 1.55;
         background-image: repeating-linear-gradient(
@@ -1382,11 +1466,91 @@
     </section>
 
     <section id="screen-lobby" class="screen" aria-label="로비">
-      <div class="lobby-card">
-        <h1>염라의 법정 · 로비</h1>
-        <div class="lobby-meta" id="lobbyMeta"></div>
-        <div class="lobby-summary" id="lobbySummary"></div>
-        <div class="lobby-actions" id="lobbyActions"></div>
+      <div class="ingame-backdrop">
+      <div class="trial-shell lobby-shell">
+        <aside class="col right-stack" aria-label="로비 행동">
+          <div class="panel panel-court-name" aria-label="염라의 법정">
+            <div class="panel-body hud">염라의 법정</div>
+          </div>
+
+          <div class="panel panel-action-spacer" aria-label="로비 상태">
+            <div class="court-caption">
+              <div id="lobbyMeta">Day 1 / 100</div>
+              <div class="sub" id="lobbyMetaSub"></div>
+            </div>
+          </div>
+
+          <div class="action-panel selected" id="lobbyActionPanel" aria-label="로비 메뉴">
+            <div class="action-list" id="lobbyActions"></div>
+          </div>
+          <div class="hint">
+            <span><b>방향키</b> 항목 이동 · <b>Enter</b> 선택</span>
+            <span><b>Esc</b> 타이틀로</span>
+          </div>
+          <div class="panel panel-court-time">
+            <div class="panel-title">
+              <span class="panel-title-label">
+                <img class="panel-title-icon" src="assets/images/ui/icon_court_time.png" alt="" aria-hidden="true">
+                <span>법정시간</span>
+              </span>
+              <span id="lobbyTimeValue">0:00</span>
+            </div>
+            <div class="panel-body hud">
+              <div class="hud-row">
+                <div class="seg-track" id="lobbyTimeSegs"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="col court-column" aria-label="로비 법정">
+          <div class="panel panel-trial-subject">
+            <div class="panel-body" id="lobbySubject">로비 · 금일 공판</div>
+          </div>
+          <div class="court-frame lobby-court-frame" aria-hidden="true">
+            <div class="court-soul"></div>
+            <div class="court-frame-cover"></div>
+          </div>
+          <div class="court-bottom">
+            <div class="court-info-btn lobby-status">
+              <span class="court-info-btn-main">
+                <img class="court-info-btn-icon" src="assets/images/ui/icon_record.png" alt="" aria-hidden="true">
+                <span id="lobbyRemainChip">남은 망자 0명</span>
+              </span>
+            </div>
+            <div class="court-info-btn lobby-status">
+              <span class="court-info-btn-main">
+                <img class="court-info-btn-icon" src="assets/images/ui/icon_court_time.png" alt="" aria-hidden="true">
+                <span id="lobbyDutyChip">남은 근무일 0일</span>
+              </span>
+            </div>
+          </div>
+        </main>
+
+        <aside class="col" aria-label="로비 기록">
+          <section class="panel lobby-roster" id="lobbyRosterBox" aria-label="금일 망자">
+            <div class="panel-title panel-title-row">
+              <span>금일 망자</span>
+              <span id="lobbyRosterCount">0/0</span>
+            </div>
+            <div class="lobby-roster-list" id="lobbyRoster"></div>
+          </section>
+          <div class="record-shell">
+            <div class="record-spring" aria-hidden="true"></div>
+            <div class="record-panel-frame">
+              <div class="record-panel-wrap">
+                <section class="panel record-box" id="lobbyNotesBox" aria-label="공판 기록">
+                  <div class="record-page record-page-top" aria-hidden="true"></div>
+                  <div class="panel-title panel-title-row">
+                    <span id="lobbyNotesTitle">공판 기록</span>
+                  </div>
+                  <div class="record-page" id="lobbySummary"></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
       </div>
     </section>
 
@@ -1663,7 +1827,7 @@
             };
           },
           volume() {
-            return Game.balance().bgmVolume != null ? Game.balance().bgmVolume : 0.45;
+            return Game.balance().bgmVolume != null ? Game.balance().bgmVolume : 0.23;
           },
           loadMute() {
             try { this.muted = localStorage.getItem("hellcourt_bgm_muted") === "1"; }
@@ -1725,6 +1889,7 @@
           if (art.ingameBg) document.documentElement.style.setProperty("--ingame-bg", 'url("' + art.ingameBg + '")');
           if (art.stageSoul) document.documentElement.style.setProperty("--stage-art", 'url("' + art.stageSoul + '")');
           if (art.stageSoul2) document.documentElement.style.setProperty("--stage-art-cover", 'url("' + art.stageSoul2 + '")');
+          if (art.lobbyStage) document.documentElement.style.setProperty("--lobby-stage", 'url("' + art.lobbyStage + '")');
         }
 
         function renderTitle() {
@@ -1804,7 +1969,7 @@
           ui.lobbyIndex = 0;
           showScreen("lobby");
           renderLobby();
-          setTimeout(function () { BGM.play("court"); }, 160);
+          BGM.stop();
         }
 
         function renderLobby() {
@@ -1814,59 +1979,107 @@
           const remaining = s.today.filter(function (row) { return !row.verdict; }).length;
           const dutyDays = 100;
           const daysLeft = Math.max(0, dutyDays - s.day);
-          document.getElementById("lobbyMeta").textContent =
-            "Day " + s.day + " / " + dutyDays + " · 남은 근무일 " + daysLeft + "일" +
-            " · 남은 법정시간 " + Game.formatCourtTime(s.courtTimeMinutes) +
-            " · 금일 남은 망자 " + remaining + "/" + s.today.length;
+          document.getElementById("lobbyMeta").textContent = "Day " + s.day + " / " + dutyDays;
+          document.getElementById("lobbyMetaSub").textContent = "남은 근무일 " + daysLeft + "일";
+          document.getElementById("lobbySubject").textContent = remaining
+            ? "로비 · 금일 공판 대기"
+            : "로비 · 금일 재판 완료";
+          document.getElementById("lobbyRemainChip").textContent = "남은 망자 " + remaining + "명";
+          document.getElementById("lobbyDutyChip").textContent = "남은 근무일 " + daysLeft + "일";
+          document.getElementById("lobbyRosterCount").textContent = remaining + "/" + s.today.length;
+          fillTimeTrack("lobbyTimeSegs", "lobbyTimeValue");
 
-          let text = "금일 망자 확인\n";
+          const roster = document.getElementById("lobbyRoster");
+          roster.innerHTML = "";
           s.today.forEach(function (row, i) {
-            text += "\n" + (i + 1) + ". " + row.name + " · " + (row.verdict ? (row.verdict === "heaven" ? L.heaven : L.hell) : "미판결");
-            if (row.summary) text += "\n   " + row.summary;
+            const item = document.createElement("div");
+            item.className = "lobby-soul-row" + (row.verdict ? " is-done" : "");
+            const verdict = row.verdict ? (row.verdict === "heaven" ? L.heaven : L.hell) : "미판결";
+            const name = document.createElement("div");
+            name.className = "lobby-soul-name";
+            name.textContent = (i + 1) + ". " + row.name;
+            const meta = document.createElement("div");
+            meta.className = "lobby-soul-meta";
+            meta.textContent = verdict + (row.summary ? " · " + row.summary : "");
+            item.appendChild(name);
+            item.appendChild(meta);
+            roster.appendChild(item);
           });
+
+          let notesTitle = "공판 기록";
+          let notes = "";
           if (s.lastSummary) {
-            text += "\n\n직전 판결\n" +
+            notesTitle = "직전 판결";
+            notes =
               "망자: " + s.lastSummary.deceasedName + "\n" +
               "판결: " + (s.lastSummary.choice === "heaven" ? L.heaven : L.hell) + "\n" +
               "확인 기록: 추가 사실 " + s.lastSummary.contextRead + "/" + s.lastSummary.eventCount +
               " · 감정과 의도 " + s.lastSummary.intentRead + "/" + s.lastSummary.eventCount + "\n" +
               "남은 시간: " + s.lastSummary.courtTimeLeftLabel;
+          } else {
+            notes = "아직 확정된 판결이 없습니다.";
           }
-          if (s.dayJustAdvanced) text += "\n\n하루가 지나 법정시간과 금일 공판이 갱신되었습니다.";
-          if (!remaining) text += "\n\n금일 재판 업무가 끝났습니다. 남은 시간은 자유시간으로 이어집니다.";
-          document.getElementById("lobbySummary").textContent = text;
+          if (s.dayJustAdvanced) notes += "\n\n하루가 지나 법정시간과 금일 공판이 갱신되었습니다.";
+          if (!remaining) notes += "\n\n금일 재판 업무가 끝났습니다. 남은 시간은 자유시간으로 이어집니다.";
+          document.getElementById("lobbyNotesTitle").textContent = notesTitle;
+          document.getElementById("lobbySummary").textContent = notes;
 
           const actions = [
             {
               id: "trial",
               label: remaining ? "망자 재판 시작" : "금일 재판 완료",
+              sub: remaining ? "대기 중인 망자를 법정에 세웁니다." : "오늘은 더 이상 재판할 망자가 없습니다.",
+              icon: "assets/images/ui/icon_verdict.png",
               primary: !!remaining,
               disabled: !remaining,
             },
             {
               id: "free",
               label: "자유시간 확인",
+              sub: "남은 법정시간을 확인합니다.",
+              icon: "assets/images/ui/icon_events.png",
               primary: !remaining,
             },
             {
               id: "nextday",
               label: "다음 날로",
+              sub: "근무일을 넘기고 공판을 갱신합니다.",
+              icon: "assets/images/ui/icon_court_time.png",
             },
             {
               id: "title",
               label: "타이틀로",
+              sub: "로비를 떠나 타이틀로 돌아갑니다.",
+              icon: "assets/images/ui/icon_menu.png",
             },
           ];
           ui._lobbyActions = actions;
           if (ui.lobbyIndex >= actions.length) ui.lobbyIndex = 0;
+          if (actions[ui.lobbyIndex] && actions[ui.lobbyIndex].disabled) {
+            const next = actions.findIndex(function (a) { return !a.disabled; });
+            if (next >= 0) ui.lobbyIndex = next;
+          }
           const wrap = document.getElementById("lobbyActions");
           wrap.innerHTML = "";
           actions.forEach(function (a, i) {
             const btn = document.createElement("button");
             btn.type = "button";
             btn.disabled = !!a.disabled;
-            btn.className = "lobby-btn" + (a.primary ? " primary" : "") + (i === ui.lobbyIndex ? " selected" : "");
-            btn.textContent = a.label;
+            btn.className = "action-btn" + (a.primary ? " primary" : "") + (i === ui.lobbyIndex ? " selected" : "");
+            const icon = document.createElement("img");
+            icon.className = "action-icon";
+            icon.src = a.icon;
+            icon.alt = "";
+            icon.setAttribute("aria-hidden", "true");
+            const copy = document.createElement("span");
+            copy.className = "action-copy";
+            copy.appendChild(document.createTextNode(a.label));
+            const sub = document.createElement("span");
+            sub.className = "sub";
+            sub.textContent = a.sub;
+            copy.appendChild(sub);
+            btn.appendChild(icon);
+            btn.appendChild(copy);
             btn.addEventListener("click", function () {
               if (a.disabled) return;
               ui.lobbyIndex = i;
@@ -2196,16 +2409,14 @@
           if (ui.emptyMode !== "interrogate" || !s || !s.events || !s.events.length) {
             if (ui.emptyMode === "verdict") {
               title.textContent = "판결 선택";
-              page.textContent =
-                (ui.verdictIndex === 0 ? "▶ " : "  ") + "무죄\n" +
-                "   " + verdictDescription("heaven") + "\n\n" +
-                (ui.verdictIndex === 1 ? "▶ " : "  ") + "유죄\n" +
-                "   " + verdictDescription("hell");
+              page.innerHTML =
+                emptyChoiceMarkup(0, ui.verdictIndex === 0, "무죄", verdictDescription("heaven")) +
+                emptyChoiceMarkup(1, ui.verdictIndex === 1, "유죄", verdictDescription("hell"));
             } else if (ui.emptyMode === "menu") {
               title.textContent = "메뉴";
-              page.textContent = popupItems.map(function (item, i) {
-                return (i === ui.popupIndex ? "▶ " : "  ") + item.label;
-              }).join("\n\n");
+              page.innerHTML = popupItems.map(function (item, i) {
+                return emptyChoiceMarkup(i, i === ui.popupIndex, item.label, "");
+              }).join("");
             } else if (ui.emptyMode === "events") {
               title.textContent = "";
               page.textContent = "";
@@ -2222,13 +2433,12 @@
             costTitle.textContent = interrogationCostLabel(focused);
           }
           page.innerHTML = s.events.map(function (ev, i) {
-            const mark = i === ui.emptyIndex ? "▶ " : "  ";
             const current = i === ui.eventIndex ? " · 현재 선택" : "";
-            return (
-              '<div class="empty-event' + (i === ui.emptyIndex ? " is-current" : "") + '">' +
-              escapeHtml(mark + (i + 1) + ". " + (ev.year || "????") + " · " + ev.title + current) +
-              "\n   " + escapeHtml(readLabel(ev)) +
-              "</div>"
+            return emptyChoiceMarkup(
+              i,
+              i === ui.emptyIndex,
+              (i + 1) + ". " + (ev.year || "????") + " · " + ev.title + current,
+              readLabel(ev)
             );
           }).join("");
           const selected = page.querySelector(".empty-event.is-current");
@@ -2242,7 +2452,7 @@
           ui.emptyIndex = ui.eventIndex;
           ui.focusArea = "empty";
           setRecordOverlayActive(true);
-          setCourtText("심문할 사건 선택", "우측 상단 목록에서 인생사건을 고르십시오.");
+          setCourtText("심문할 사건 선택", "우측에서 인생사건을 고르십시오.");
           refreshTrial();
         }
 
@@ -2261,6 +2471,38 @@
           if (!s || !s.events || !s.events.length) return;
           ui.emptyIndex = (ui.emptyIndex + dir + s.events.length) % s.events.length;
           renderEmpty();
+        }
+
+        function emptyChoiceMarkup(index, current, title, sub) {
+          const mark = current ? "▶ " : "  ";
+          return (
+            '<button type="button" class="empty-event' + (current ? " is-current" : "") + '" data-index="' + index + '">' +
+            escapeHtml(mark + title) +
+            (sub ? "\n   " + escapeHtml(sub) : "") +
+            "</button>"
+          );
+        }
+
+        function clickEmptyChoice(index) {
+          if (ui.emptyMode === "verdict") {
+            if (index !== 0 && index !== 1) return;
+            ui.verdictIndex = index;
+            ui.focusArea = "empty";
+            confirmEmptySelection();
+            return;
+          }
+          if (ui.emptyMode === "menu") {
+            if (index < 0 || index >= popupItems.length) return;
+            ui.popupIndex = index;
+            ui.focusArea = "empty";
+            confirmEmptySelection();
+            return;
+          }
+          const s = Game.state;
+          if (ui.emptyMode !== "interrogate" || !s || !s.events || !s.events[index]) return;
+          ui.emptyIndex = index;
+          ui.focusArea = "empty";
+          confirmEmptySelection();
         }
 
         function confirmEmptySelection() {
@@ -2284,8 +2526,14 @@
         }
 
         function renderTime() {
+          fillTimeTrack("timeSegs", "timeValue");
+        }
+
+        function fillTimeTrack(segId, valueId) {
           const s = Game.state;
-          const segs = document.getElementById("timeSegs");
+          const segs = document.getElementById(segId);
+          const valueEl = document.getElementById(valueId);
+          if (!s || !segs || !valueEl) return;
           const hours = s.courtTimeHours || 8;
           const hoursLeft = Math.ceil((s.courtTimeMinutes || 0) / 60);
           segs.innerHTML = "";
@@ -2294,7 +2542,7 @@
             d.className = "seg" + (i < hoursLeft ? " on" : "");
             segs.appendChild(d);
           }
-          document.getElementById("timeValue").textContent = Game.formatCourtTime(s.courtTimeMinutes);
+          valueEl.textContent = Game.formatCourtTime(s.courtTimeMinutes);
         }
 
         function recordPages() {
@@ -2500,6 +2748,15 @@
 
         const BUBBLE_DISMISS_GRACE_MS = 700;
 
+        function tryDismissBubbles() {
+          if (ui.screen !== "ingame" || !Game.state || Game.state.phase !== "trial") return false;
+          if (!ui.bubbleLocked || !ui.bubbleAwaiting) return false;
+          if (!ui.bubbleShownAt || Date.now() - ui.bubbleShownAt < BUBBLE_DISMISS_GRACE_MS) return false;
+          dismissBubbles();
+          playSfx("select");
+          return true;
+        }
+
         function dismissBubbles() {
           clearUnlockTimers();
           const player = document.getElementById("playerBubble");
@@ -2560,7 +2817,7 @@
           renderRecord();
           renderVerdictReview();
           if (fresh) {
-            setCourtText(s.name + "의 재판이 시작되었다.", s.intro || "인생사건을 확인하고 필요한 만큼 조사하십시오.");
+            setCourtText(s.name + "의 재판이 시작되었다.", "인생사건을 확인하고 조사하십시오.");
             const ev = selectedEvent();
             if (ev) Game.selectEvent(ev.id);
           }
@@ -2637,7 +2894,7 @@
           ui.verdictIndex = 0;
           ui.focusArea = "empty";
           setRecordOverlayActive(true);
-          setCourtText("판결 선택", "중앙에서 사건을 확인하고 우측에서 무죄 또는 유죄를 선택하십시오.");
+          setCourtText("판결 선택", "무죄 또는 유죄를 선택하십시오.");
           refreshTrial();
         }
 
@@ -2651,7 +2908,7 @@
           ui.popupIndex = 0;
           ui.focusArea = "empty";
           setRecordOverlayActive(true);
-          setCourtText("메뉴", "우측 상단에서 항목을 선택하십시오.");
+          setCourtText("메뉴", "우측에서 항목을 선택하십시오.");
           refreshTrial();
         }
 
@@ -2769,7 +3026,7 @@
           Game.finishToLobby();
           showScreen("lobby");
           renderLobby();
-          BGM.play("court");
+          BGM.stop();
         }
 
         function shouldExpediteVerdicts() {
@@ -2965,7 +3222,15 @@
           if (e.target.closest("button")) return;
           setFocusArea("courtInfo");
         });
-        document.getElementById("emptyBox").addEventListener("click", function () {
+        document.getElementById("emptyBox").addEventListener("click", function (e) {
+          const row = e.target.closest(".empty-event");
+          if (row) {
+            const index = Number(row.getAttribute("data-index"));
+            if (index >= 0) {
+              clickEmptyChoice(index);
+              return;
+            }
+          }
           setFocusArea("empty");
         });
         document.getElementById("verdictReview").addEventListener("click", function () {
@@ -2977,6 +3242,13 @@
           if (!side) return;
           moveRecordPage(side.classList.contains("is-left") ? -1 : 1);
           if (!changed) playSfx("select");
+        });
+        document.getElementById("soulBubble").addEventListener("click", function (e) {
+          if (tryDismissBubbles()) e.stopPropagation();
+        });
+        document.getElementById("courtFrame").addEventListener("click", function (e) {
+          if (e.target.closest("#verdictReview")) return;
+          tryDismissBubbles();
         });
         document.getElementById("courtFrame").addEventListener("animationend", function () {
           this.classList.remove("pulse");
@@ -3044,14 +3316,24 @@
             return;
           }
           if (ui.screen === "lobby") {
-            const n = (ui._lobbyActions || []).length;
-            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            const actions = ui._lobbyActions || [];
+            const n = actions.length;
+            if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
               e.preventDefault();
-              ui.lobbyIndex = (ui.lobbyIndex + (e.key === "ArrowRight" ? 1 : -1) + n) % n;
+              const dir = (e.key === "ArrowDown" || e.key === "ArrowRight") ? 1 : -1;
+              for (let i = 0; i < n; i += 1) {
+                ui.lobbyIndex = (ui.lobbyIndex + dir + n) % n;
+                if (!actions[ui.lobbyIndex] || !actions[ui.lobbyIndex].disabled) break;
+              }
               playSfx("select");
               renderLobby();
             } else if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
+              confirmLobby();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              ui.lobbyIndex = actions.findIndex(function (a) { return a.id === "title"; });
+              if (ui.lobbyIndex < 0) ui.lobbyIndex = Math.max(0, n - 1);
               confirmLobby();
             }
             return;
@@ -3103,10 +3385,7 @@
             if (e.repeat) return;
             if (e.key !== "Enter") return;
             if (ui.bubbleIgnoreEnter) return;
-            if (!ui.bubbleAwaiting) return;
-            if (!ui.bubbleShownAt || Date.now() - ui.bubbleShownAt < BUBBLE_DISMISS_GRACE_MS) return;
-            dismissBubbles();
-            playSfx("select");
+            tryDismissBubbles();
             return;
           }
           if (e.key === "Tab") {

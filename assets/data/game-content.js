@@ -477,6 +477,7 @@
         verdictHeaven: "assets/images/ui/VerdictInnocent.png",
         stageSoul: "assets/images/ui/StageSoul.png",
         stageSoul2: "assets/images/ui/StageSoul_2.png",
+        lobbyStage: "assets/images/ui/Lobby.png",
       },
     },
     audio: {

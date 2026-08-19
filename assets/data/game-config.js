@@ -24,7 +24,7 @@
         costContextMinutes: 10,
         costIntentMinutes: 5,
       },
-      bgmVolume: 0.45,
+      bgmVolume: 0.23,
       sfxVolume: 0.55,
     },
 
