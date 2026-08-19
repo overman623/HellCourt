@@ -179,6 +179,16 @@
         background: var(--title-bg, #050505) center / cover no-repeat;
         image-rendering: pixelated;
       }
+      .title-version {
+        position: absolute;
+        left: 1.35rem;
+        bottom: 1.1rem;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        pointer-events: none;
+      }
       .title-menu, .settings-menu, .end-menu {
         display: flex;
         flex-direction: column;
@@ -564,9 +574,10 @@
       }
       .soul-bubble {
         left: 50%;
-        top: 16%;
-        transform: translate(-50%, 12px);
-        max-height: min(52%, 24rem);
+        top: auto;
+        bottom: 42%;
+        transform: translateX(-50%);
+        max-height: calc(52% - 0.75rem);
         overflow: auto;
         scrollbar-width: thin;
         scrollbar-color: rgba(242,242,242,0.72) rgba(0,0,0,0.35);
@@ -1414,7 +1425,7 @@
       #toast.show { opacity: 1; }
 
       @keyframes bubbleReveal {
-        0% { opacity: 0; transform: translate(-50%, 16px) scale(0.98); }
+        0% { opacity: 0; transform: translate(-50%, 10px) scale(0.98); }
         100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
       }
       @keyframes playerQuestion {
@@ -1455,6 +1466,7 @@
     <h1 class="sr-only">지옥법정</h1>
 
     <section id="screen-title" class="screen active" aria-label="타이틀">
+      <p class="title-version" id="titleVersion">p 0.0.0.0</p>
       <nav class="title-menu" id="titleMenu" aria-label="타이틀 메뉴"></nav>
     </section>
 
@@ -1893,6 +1905,11 @@
         }
 
         function renderTitle() {
+          const ver = document.getElementById("titleVersion");
+          if (ver) {
+            const proto = (window.GAME_CONFIG && window.GAME_CONFIG.prototypeVersion) || "0.0.0.0";
+            ver.textContent = "p " + proto;
+          }
           const menu = document.getElementById("titleMenu");
           menu.innerHTML = "";
           titleItems.forEach(function (item, i) {

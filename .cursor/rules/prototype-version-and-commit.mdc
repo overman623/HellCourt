@@ -1,0 +1,37 @@
+---
+description: Bump prototypeVersion last digit after game changes and auto local-commit
+alwaysApply: true
+---
+
+# Prototype version bump + local commit
+
+After finishing a task that changes playable game files (`index.html`, `assets/**`, etc.), do both of these before ending the turn.
+
+Skip both if the only edits are `.cursor/rules/**`, `AGENTS.md`, or other docs.
+
+## 1. Bump the title version
+
+In `assets/data/game-config.js`, increment the **last number** of `prototypeVersion` by 1.
+
+```
+"0.0.0.0" -> "0.0.0.1"
+"0.0.0.9" -> "0.0.0.10"
+```
+
+Do this once per finished task, not per file. Do not change the `p ` prefix in `#titleVersion` (`p 0.0.0.0`).
+
+## 2. Local commit (no push)
+
+This workspace rule is standing permission to commit those game changes locally. Do not wait for the user to ask.
+
+- Stage only files from this task, including the version bump.
+- Exclude unrelated paths (for example leftover doc deletions).
+- Commit with `--no-verify`.
+- Do **not** push unless the user asks.
+- Follow the existing git safety protocol (no force-push, no hook skip except `--no-verify`, no secrets).
+
+Example message:
+
+```
+Bump prototype to 0.0.0.1 and <short why>.
+```

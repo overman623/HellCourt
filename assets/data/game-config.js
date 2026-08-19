@@ -5,6 +5,7 @@
    */
   window.GAME_CONFIG = {
     version: "current-rules-prototype-2026-08-13",
+    prototypeVersion: "0.0.0.1",
 
     systems: {
       playtestLog: { enabled: true },

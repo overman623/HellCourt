@@ -74,7 +74,9 @@ Keep the list short and tied to what actually changed in that turn. Skip it when
 
 ## Git
 
-When the user asks for a local commit in this workspace, use `git commit --no-verify` (skip hooks).
+When committing locally in this workspace, use `git commit --no-verify` (skip hooks).
+
+After playable game changes, bump `GAME_CONFIG.prototypeVersion` (last number only) and make a local commit. Do not push unless asked. See `.cursor/rules/prototype-version-and-commit.mdc`.
 
 ## Verification
 
